@@ -21,7 +21,7 @@ class Color:
     @classmethod
     def from_rgb(cls, red: float, green: float, blue: float, alpha: float = ...) -> "Color":
         new = cls()
-        new.rgb = [red, green, blue] + ([] if alpha is ... else [alpha])
+        new.rgb = [red, green, blue] + ([255] if alpha is ... else [alpha])
 
         return new
 

@@ -9,6 +9,8 @@ Nilusink
 """
 from ._geo_manager import GeometryManager
 from ..types import Color, BetterDict
+from ..theme import ThemeManager
+from ..utils import arg_or_default
 import typing as tp
 import pygame as pg
 
@@ -19,6 +21,8 @@ class DisplayConfig(tp.TypedDict):
     urr: int
     llr: int
     lrr: int
+    border_width: int
+    border_color: Color
 
 
 class Frame(GeometryManager):
@@ -26,7 +30,7 @@ class Frame(GeometryManager):
     The base widget
     """
     __parent: tp.Union["Frame", tp.Any]
-    _display_config: BetterDict[DisplayConfig] = ...
+    _display_config: BetterDict = ...
     _x: int = -1
     _y: int = -1
 
@@ -37,15 +41,39 @@ class Frame(GeometryManager):
             height: int = ...,
             bg_color: Color = ...,
             border_radius: int = ...,
+            border_bottom_radius: int = ...,
+            border_top_radius: int = ...,
+            border_bottom_left_radius: int = ...,
+            border_bottom_right_radius: int = ...,
+            border_top_left_radius: int = ...,
+            border_top_right_radius: int = ...,
+            border_width: int = ...,
+            border_color: Color = ...,
     ) -> None:
+        """
+        the most basic widget: a frame
+
+        :param parent: the frames parent container
+        :param width: width of the frame
+        :param height: height of the frame
+        :param bg_color: background color of the frame
+        :param border_radius: border radius of the box (all four corners)
+        :param border_width: how thick the border of the box should be
+        :param border_color: the color of the border
+        """
+
         # mutable defaults
-        self._display_config = BetterDict({
+        display_config: DisplayConfig = {
             "bg": Color(),
             "ulr": 0,
             "urr": 0,
             "llr": 0,
-            "lrr": 0
-        })
+            "lrr": 0,
+            "border_width": ...,
+            "border_color": ...,
+        }
+
+        self._display_config = BetterDict(display_config)
 
         super().__init__()
 
@@ -59,10 +87,31 @@ class Frame(GeometryManager):
             self._height = height
 
         self._display_config["bg"] = self.__parent.theme.frame.bg if bg_color is ... else bg_color
+        self._display_config["border_width"] = 0 if border_width is ... else border_width
+        self._display_config["border_color"] = self.__parent.theme.frame.border if border_color is ... else border_color
 
-        if border_radius:
+        # border radii
+        if border_radius is not ...:
             self._display_config["ulr"] = self._display_config["urr"] = border_radius
             self._display_config["llr"] = self._display_config["lrr"] = border_radius
+
+        if border_top_radius is not ...:
+            self._display_config["ulr"] = border_top_radius
+            self._display_config["urr"] = border_top_radius
+
+        if border_bottom_radius is not ...:
+            self._display_config["llr"] = border_bottom_radius
+            self._display_config["lrr"] = border_bottom_radius
+
+        self._display_config.ulr = arg_or_default(border_top_left_radius, self._display_config.ulr, ...)
+        self._display_config.urr = arg_or_default(border_top_right_radius, self._display_config.urr, ...)
+
+        self._display_config.llr = arg_or_default(border_bottom_left_radius, self._display_config.llr, ...)
+        self._display_config.lrl = arg_or_default(border_bottom_right_radius, self._display_config.lrr, ...)
+
+    @property
+    def theme(self) -> ThemeManager:
+        return self.__parent.theme
 
     def get_size(self) -> tuple[int, int]:
         """
@@ -92,7 +141,28 @@ class Frame(GeometryManager):
         _surface = pg.Surface((width, height), pg.SRCALPHA)
 
         # draw the frame
-        pg.draw.rect(_surface, self._display_config.bg.rgba, pg.Rect((0, 0, self._width, self._height)))
+        r_rect = pg.Rect((0, 0, self._width, self._height))
+        pg.draw.rect(
+            _surface,
+            self._display_config.bg.rgba,
+            r_rect,
+            border_top_left_radius=self._display_config.ulr,
+            border_top_right_radius=self._display_config.urr,
+            border_bottom_left_radius=self._display_config.llr,
+            border_bottom_right_radius=self._display_config.lrr,
+        )
+
+        if self._display_config.border_width > 0:
+            pg.draw.rect(
+                _surface,
+                self._display_config.border_color.rgba,
+                r_rect,
+                width=self._display_config.border_width,
+                border_top_left_radius=self._display_config.ulr,
+                border_top_right_radius=self._display_config.urr,
+                border_bottom_left_radius=self._display_config.llr,
+                border_bottom_right_radius=self._display_config.lrr,
+            )
 
         # draw children
         for child, params in self._child_params:
