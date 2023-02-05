@@ -4,6 +4,7 @@
   },
   "frame": {
     "bg": "#555",
-    "border": "#666"
+    "border": "#666",
+    "border_radius": 20
   }
 }

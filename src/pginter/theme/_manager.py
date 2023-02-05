@@ -51,11 +51,12 @@ class ThemeManager:
                         raise ValueError(f"Invalid color value in theme file: \"{color}\"")
 
                 # rgb values written as tuple
-                elif isinstance(color, tp.Iterable) and isinstance(color[0], float) or isinstance(color[0], int):
-                    self._config[key][ckey] = Color.from_rgb(*color)
+                elif isinstance(color, list):
+                    if isinstance(color[0], float) or isinstance(color[0], int):
+                        self._config[key][ckey] = Color.from_rgb(*color)
 
-                else:
-                    raise ValueError(f"Invalid value in theme file: {color}")
+                # else:
+                #     raise ValueError(f"Invalid value in theme file: {color}")
 
     def __getattr__(self, item: str) -> str | BetterDict:
         """

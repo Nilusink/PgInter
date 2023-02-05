@@ -57,9 +57,9 @@ class Frame(GeometryManager):
             self,
             parent: tp.Union["Frame", tp.Any],
             width: int = ...,
-            layout: int = 0,
             height: int = ...,
             bg_color: Color = ...,
+            layout: int = 0,
             border_radius: int = ...,
             border_bottom_radius: int = ...,
             border_top_radius: int = ...,
@@ -69,8 +69,8 @@ class Frame(GeometryManager):
             border_top_right_radius: int = ...,
             border_width: int = ...,
             border_color: Color = ...,
-            margin: int = 0,
-            padding: int = 0,
+            margin: int = ...,
+            padding: int = ...,
     ) -> None:
         """
         the most basic widget: a frame
@@ -84,35 +84,52 @@ class Frame(GeometryManager):
         :param border_color: the color of the border
         """
 
+        self.__parent = parent
+
         # mutable defaults
         display_config: DisplayConfig = {
-            "bg": Color(),
-            "ulr": 0,
-            "urr": 0,
-            "llr": 0,
-            "lrr": 0,
-            "border_width": ...,
+            "bg": ...,
+            "ulr": self.theme.frame.border_top_left_radius if "border_top_left_radius" in self.theme.frame else 0,
+            "urr": self.theme.frame.border_top_right_radius if "border_top_right_radius" in self.theme.frame else 0,
+            "llr": self.theme.frame.border_bottom_left_radius if "border_bottom_left_radius" in self.theme.frame else 0,
+            "lrr": self.theme.frame.border_bottom_right_radius if "border_bottom_right_radius" in self.theme.frame else 0,
+            "border_width": self.theme.frame.border_width if "border_width" in self.theme.frame else 0,
             "border_color": ...,
         }
 
         self._display_config = BetterDict(display_config)
 
+        if margin is ...:
+            margin = self.theme.frame.margin if "margin" in self.theme.frame else 0
+
+        if padding is ...:
+            padding = self.theme.frame.padding if "padding" in self.theme.frame else 0
+
         super().__init__(layout, margin, padding)
 
         # arguments
-        self.__parent = parent
-
         if width is not ...:
             self.width = width
 
         if height is not ...:
             self.height = height
 
-        self._display_config["bg"] = self.__parent.theme.frame.bg if bg_color is ... else bg_color
-        self._display_config["border_width"] = 0 if border_width is ... else border_width
-        self._display_config["border_color"] = self.__parent.theme.frame.border if border_color is ... else border_color
+        self._display_config["bg"] = self.theme.frame.bg if bg_color is ... else bg_color
+        if border_width is not ...:
+            self._display_config["border_width"] = border_width
+
+        self._display_config["border_color"] = self.theme.frame.border if border_color is ... else border_color
 
         # border radii
+        if border_radius is ... and "border_radius" in self.theme.frame:
+            border_radius = self.theme.frame.border_radius
+
+        if border_bottom_radius is ... and "border_bottom_radius" in self.theme.frame:
+            border_bottom_radius = self.theme.frame.border_bottom_radius
+
+        if border_top_radius is ... and "border_top_radius" in self.theme.frame:
+            border_top_radius = self.theme.frame.border_top_radius
+
         if border_radius is not ...:
             self._display_config["ulr"] = self._display_config["urr"] = border_radius
             self._display_config["llr"] = self._display_config["lrr"] = border_radius
@@ -262,7 +279,7 @@ class Frame(GeometryManager):
             anchor: tp.Literal["top", "bottom", "left", "right"] = TOP,
     ) -> None:
         """
-        pack the frame in a parent container
+        pack the frame into a parent container
 
         :param anchor: where to orient the frame at (direction)
         """
@@ -270,6 +287,24 @@ class Frame(GeometryManager):
             raise TypeError("can't pack in a container that is not managed by \"Pack\"")
 
         self.__parent.add_child(self, anchor=anchor.lower())
+
+    def grid(
+            self,
+            row: int,
+            column: int,
+            sticky: str = "",
+    ) -> None:
+        """
+        grid the frame into a parent container
+
+        :param row: the row the item should be placed in
+        :param column: the column the item should be placed in
+        :param sticky: expansion, can be a combination of "n", "e", "s", "w"
+        """
+        if self.__parent.layout is not Grid:
+            raise TypeError("can't grid in a container that is not managed by \"Grid\"")
+
+        self.__parent.add_child(self, row=row, column=column, sticky=sticky)
 
     def set_position(self, x: int, y: int) -> None:
         """

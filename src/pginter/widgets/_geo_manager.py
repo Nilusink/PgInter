@@ -24,6 +24,7 @@ class GeometryManager(SupportsChildren):
     _height_configured: bool = False
     _child_params: list[tuple[tp.Any, BetterDict]] = ...
     layout_params: BetterDict = ...
+    _grid_params: BetterDict = ...
 
     def __init__(
             self,
@@ -39,6 +40,10 @@ class GeometryManager(SupportsChildren):
             "padding": padding
         })
         self._child_params = []
+        self._grid_params = BetterDict({
+            "rows": {},
+            "columns": {}
+        })
 
     @property
     def layout(self) -> int:
@@ -65,6 +70,7 @@ class GeometryManager(SupportsChildren):
         self._height = value
         self._height_configured = True
 
+    # layout configuration
     def set_layout(self, layout: int) -> None:
         """
         set the container's layout type
@@ -83,6 +89,37 @@ class GeometryManager(SupportsChildren):
 
         self._layout = layout
 
+    def grid_columnconfigure(self, column: int | tp.Iterable[int], weight: float = 1) -> None:
+        """
+        configure one or more grid columns
+        """
+        # if the column is given as a list, call this function with an integer as parameter
+        if isinstance(column, tp.Iterable):
+            for c in column:
+                self.grid_columnconfigure(c, weight=weight)
+
+            return
+
+        self._grid_params["columns"][column] = {
+            "weight": weight
+        }
+
+    def grid_rowconfigure(self, row: int | tp.Iterable[int], weight: float = 1) -> None:
+        """
+        configure one or more grid rows
+        """
+        # if the row is given a list, call this function with an integer as parameter
+        if isinstance(row, tp.Iterable):
+            for r in row:
+                self.grid_rowconfigure(r, weight=weight)
+
+            return
+
+        self._grid_params["rows"][row] = {
+            "weight": weight
+        }
+
+    # other stuff
     def add_child(self, child: tp.Any, **params) -> None:
         """
         add a child to the collection
@@ -191,10 +228,180 @@ class GeometryManager(SupportsChildren):
                     y_now -= size[1] + self.layout_params.padding
 
             case 2:  # grid
-                ...
+                rows: list[dict[str, tp.Any | float]] = []
+                columns: list[dict[str, tp.Any | float]] = []
+
+                for child, params in self._child_params:
+                    row, column = params["row"], params["column"]
+
+                    # if row was not yet made, make all previous ones
+                    if len(rows) <= row:
+                        for n_row in range(len(rows), row+1):
+                            out = {
+                                "weight": 0,
+                                "children": []
+                            }
+
+                            if n_row in self._grid_params.rows:
+                                config = self._grid_params.rows[n_row]
+
+                                if "weight" in config:
+                                    out["weight"] = config["weight"]
+
+                            rows.append(out)
+
+                    if len(columns) <= column:
+                        for n_col in range(len(columns), column+1):
+                            out = {
+                                "weight": 0,
+                                "children": []
+                            }
+
+                            if n_col in self._grid_params.columns:
+                                config = self._grid_params.columns[n_col]
+
+                                if "weight" in config:
+                                    out["weight"] = config["weight"]
+
+                            columns.append(out)
+
+                    rows[row]["children"].append((child, params))
+                    columns[column]["children"].append((child, params))
+
+                matrix: list[list] = []
+
+                for r in range(len(rows)):
+                    matrix.append([])
+
+                    for c in range(len(columns)):
+                        # child = set(rows[r]["children"]) & set(columns[c]["children"])
+                        child = [chi for chi in rows[r]["children"] if chi in columns[c]["children"]]
+                        child = list(child)
+
+                        if len(child) > 1:
+                            raise ValueError(f"{len(child)} children assigned to row {r} column {c}!")
+
+                        if child:
+                            matrix[r].append(child[0])
+
+                        else:
+                            matrix[r].append(...)
+
+                # debug matrix
+                print("\n[")
+                for row in matrix:
+                    print(f"\t{row},")
+                print("]\n")
+
+                # calculate the minimal size for each row
+                for r, row in enumerate(rows):
+                    rows[r]["max_size"] = 0
+
+                    for child, _ in row["children"]:
+                        _, y = child.calculate_size()
+
+                        if y > rows[r]["max_size"]:
+                            rows[r]["max_size"] = y
+
+                # calculate the minimal size for each column
+                for c, column in enumerate(columns):
+                    columns[c]["max_size"] = 0
+
+                    for child, _ in column["children"]:
+                        x, _ = child.calculate_size()
+
+                        if x > columns[c]["max_size"]:
+                            columns[c]["max_size"] = x
+
+                # calculate the container size
+                width, height = self.width, self.height
+
+                min_width = sum([c["max_size"] for c in columns])
+                min_height = sum([r["max_size"] for r in rows])
+
+                if not self._width_configured:
+                    width = min_width
+
+                if not self._height_configured:
+                    height = min_height
+
+                # assign extra space
+                extra_width = width - min_width
+                extra_height = height - min_height
+
+                total_row_weight = sum([row["weight"] for row in rows])
+                total_column_weight = sum([column["weight"] for column in columns])
+
+                # assign each row and column a specific size
+                for r in range(len(rows)):
+                    if total_row_weight == 0:
+                        rows[r]["height"] = 0
+                    else:
+                        rows[r]["height"] = ((rows[r]["weight"] / total_row_weight) * extra_height).__floor__()
+
+                    rows[r]["height"] += rows[r]["max_size"]
+                    rows[r]["y_start"] = sum([prev_row["height"] for prev_row in rows[:r]])
+
+                    for c in range(len(columns)):
+                        if total_column_weight == 0:
+                            columns[c]["width"] = 0
+                        else:
+                            columns[c]["width"] = ((columns[c]["weight"] / total_column_weight) * extra_width).__floor__()
+
+                        columns[c]["width"] += columns[c]["max_size"]
+                        columns[c]["x_start"] = sum([prev_col["width"] for prev_col in columns[:c]])
+
+                print(f"extra: {extra_width}, {extra_height}\t\ttotal weight: {total_row_weight}, {total_column_weight}")
+
+                # place children
+                for child, params in self._child_params:
+                    # place the child proportional to the table and stickiness
+                    size = list(child.calculate_size())
+
+                    row, column = params["row"], params["column"]
+                    sticky = params["sticky"]
+
+                    width = columns[column]["width"]
+                    height = rows[row]["height"]
+
+                    x = columns[column]["x_start"]
+                    y = rows[row]["y_start"]
+
+                    x_cen = x + width / 2
+                    y_cen = y + height / 2
+
+                    x_diff = x - size[0]
+                    y_diff = y - size[1]
+
+                    box_x = x_cen - size[0] / 2
+                    box_y = y_cen - size[1] / 2
+
+                    # assign stickiness
+                    if not child._width_configured:
+                        if "w" in sticky:
+                            size[0] += x_diff / 2
+                            box_x = x
+
+                        if "e" in sticky:
+                            size[0] += x_diff / 2
+
+                        child._width = size[0]
+
+                    if not child._height_configured:
+                        if "n" in sticky:
+                            size[1] += y_diff / 2
+                            box_y = y
+
+                        if "s" in sticky:
+                            size[1] += y_diff / 2
+
+                        child._height = size[1]
+
+                    print(f"pos: {box_x}, {box_y}\t\tsize: {size[0]}, {size[1]}")
+                    child.set_position(box_x, box_y)
 
             case _:
-                raise ValueError(f"Invalid geometry type: {self._layout.__class__.__name__}")
+                raise ValueError(f"Invalid geometry type: {self._layout}")
 
     def calculate_size(self) -> tuple[int, int]:
         """
