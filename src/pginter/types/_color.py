@@ -18,6 +18,7 @@ class Color:
     def __init__(self) -> None:
         self.rgb = 0, 0, 0, 0
 
+    # constructors
     @classmethod
     def from_rgb(cls, red: float, green: float, blue: float, alpha: float = ...) -> "Color":
         new = cls()
@@ -29,10 +30,32 @@ class Color:
     def from_hex(cls, hex_value: str, alpha: float = ...) -> "Color":
         new = cls()
         new.hex = hex_value
-        new.alpha = alpha
+        new.alpha = 255 if alpha is ... else alpha
 
         return new
 
+    @classmethod
+    def transparent(cls) -> "Color":
+        """
+        a fully transparent color
+        """
+        return cls.from_rgb(0, 0, 0, 0)
+
+    @classmethod
+    def white(cls) -> "Color":
+        """
+        white
+        """
+        return cls.from_hex("#fff")
+
+    @classmethod
+    def black(cls) -> "Color":
+        """
+        black
+        """
+        return cls.from_hex("#000")
+
+    # properties
     @property
     def rgb(self) -> tuple[float, float, float]:
         return self._rgb
@@ -85,6 +108,7 @@ class Color:
     def alpha(self, value: float) -> None:
         self._alpha = value
 
+    # internal stuff
     def _recalculate_colors(self, calc_from: tp.Literal["r", "rgb", "h", "hex"]):
         if calc_from in ("rgb", "r"):
             self._hex = f"#" \

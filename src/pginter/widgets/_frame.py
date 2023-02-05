@@ -8,9 +8,9 @@ Author:
 Nilusink
 """
 from ._geo_manager import GeometryManager
-from ..types import Color, BetterDict
 from ..theme import ThemeManager
 from ..utils import arg_or_default
+from ..types import *
 import typing as tp
 import pygame as pg
 
@@ -49,6 +49,8 @@ class Frame(GeometryManager):
             border_top_right_radius: int = ...,
             border_width: int = ...,
             border_color: Color = ...,
+            margin: int = 0,
+            padding: int = 0,
     ) -> None:
         """
         the most basic widget: a frame
@@ -75,16 +77,16 @@ class Frame(GeometryManager):
 
         self._display_config = BetterDict(display_config)
 
-        super().__init__()
+        super().__init__(0, margin, padding)
 
         # arguments
         self.__parent = parent
 
         if width is not ...:
-            self._width = width
+            self.width = width
 
         if height is not ...:
-            self._height = height
+            self.height = height
 
         self._display_config["bg"] = self.__parent.theme.frame.bg if bg_color is ... else bg_color
         self._display_config["border_width"] = 0 if border_width is ... else border_width
@@ -178,8 +180,28 @@ class Frame(GeometryManager):
     ) -> None:
         """
         place the frame in a parent container
+
+        :param x: x-position
+        :param y: y-position
         """
+        if self.__parent.layout is not Absolute:
+            raise TypeError("can't place in a container that is not managed by \"Absolute\"")
+
         self.__parent.add_child(self, x=x, y=y)
+
+    def pack(
+            self,
+            anchor: tp.Literal["top", "bottom", "left", "right"] = TOP,
+    ) -> None:
+        """
+        pack the frame in a parent container
+
+        :param anchor: where to orient the frame at (direction)
+        """
+        if self.__parent.layout is not Pack:
+            raise TypeError("can't pack in a container that is not managed by \"Pack\"")
+
+        self.__parent.add_child(self, anchor=anchor.lower())
 
     def set_position(self, x: int, y: int) -> None:
         """
@@ -192,5 +214,15 @@ class Frame(GeometryManager):
         """
         set the child's size (used by parens)
         """
-        self._width = width
-        self._height = height
+        self.width = width
+        self.height = height
+
+    def delete(self) -> None:
+        """
+        delete the widget
+        """
+        self.__parent = ...
+
+        # terminate all children
+        for child in self._children:
+            child.delete()

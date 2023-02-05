@@ -43,7 +43,7 @@ class PgRoot(GeometryManager):
         pg.init()
         pg.font.init()
 
-        self.__background = pg.display.set_mode()
+        self.__background = pg.display.set_mode(flags=pg.RESIZABLE)
 
         # set icon and caption
         pg.display.set_caption(DEFAULT_TITLE if title is ... else title)
