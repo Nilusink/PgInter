@@ -21,7 +21,7 @@ class Color:
     @classmethod
     def from_rgb(cls, red: float, green: float, blue: float, alpha: float = ...) -> "Color":
         new = cls()
-        new.rgb = [red, green, blue] + [] if alpha is ... else [alpha]
+        new.rgb = [red, green, blue] + ([] if alpha is ... else [alpha])
 
         return new
 
@@ -36,6 +36,10 @@ class Color:
     @property
     def rgb(self) -> tuple[float, float, float]:
         return self._rgb
+
+    @property
+    def rgba(self) -> tuple[float, float, float, float]:
+        return tuple(self._rgb) + (self._alpha,)
 
     @rgb.setter
     def rgb(self, value: tuple[float, float, float] | tuple[float, float, float, float]) -> None:

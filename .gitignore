@@ -132,3 +132,4 @@ dmypy.json
 # custom
 build_and_upload.sh
 .idea/
+main.py

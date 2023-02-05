@@ -10,9 +10,10 @@ Nilusink
 from ..types import *
 import typing as tp
 import json
+import os
 
 
-DEFAULT_THEME: str = "themes/default.json"
+DEFAULT_THEME: str = os.path.dirname(__file__) + "/themes/default.json"
 
 
 class ThemeManager:
@@ -32,15 +33,29 @@ class ThemeManager:
         return cls.instance
 
     def __init__(self, theme_path: str = ...) -> None:
+        # load the theme
         self._config = json.load(open(DEFAULT_THEME if theme_path is ... else theme_path, "r"))
 
+        # convert each color to a color class instance
         for key in self._config.copy():
             for ckey, color in self._config[key].items():
                 if isinstance(color, str):
-                    self._config[key][ckey] = Color.from_hex(color, 255)
+                    # differentiate between hex and rgb values
+                    if color.startswith("#"):
+                        self._config[key][ckey] = Color.from_hex(color, 255)
 
+                    elif color.startswith("rgb"):
+                        self._config[key][ckey] = Color.from_rgb(*[int(val) for val in color.lstrip("rgb").split(",")])
+
+                    else:
+                        raise ValueError(f"Invalid color value in theme file: \"{color}\"")
+
+                # rgb values written as tuple
                 elif isinstance(color, tp.Iterable) and isinstance(color[0], float) or isinstance(color[0], int):
                     self._config[key][ckey] = Color.from_rgb(*color)
+
+                else:
+                    raise ValueError(f"Invalid value in theme file: {color}")
 
     def __getattr__(self, item: str) -> str | BetterDict:
         """

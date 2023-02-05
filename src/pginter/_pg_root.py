@@ -7,6 +7,7 @@ the root of the window
 Author:
 Nilusink
 """
+from .widgets import GeometryManager
 from .theme import ThemeManager
 import pygame as pg
 import typing as tp
@@ -18,7 +19,7 @@ DEFAULT_TITLE: str = "Window"
 DEFAULT_ICON: str = "icon.png"
 
 
-class PgRoot:
+class PgRoot(GeometryManager):
     _running: bool = True
     _theme: ThemeManager = ...
     __background: pg.Surface = ...
@@ -30,6 +31,7 @@ class PgRoot:
             size: tuple[int, int] = ...,
             bg_color: Color = ...,
     ):
+        super().__init__()
         self._theme = ThemeManager()
 
         # args
@@ -74,6 +76,11 @@ class PgRoot:
         update the screen
         """
         self.__background.fill(self._bg)
+
+        self.calculate_geometry()
+        for child, params in self._child_params:
+            child.draw(self.__background)
+
         pg.display.flip()
 
     def update(self) -> None:
@@ -89,3 +96,33 @@ class PgRoot:
         while self._running:
             self.update()
             self.update_screen()
+
+    def calculate_geometry(self):
+        """
+        calculate how each individual child should be placed
+        """
+        match self._layout:
+            case 0:  # Absolute
+                # since the positioning is absolute, the children should not influence the parents size
+                for child, params in self._child_params:
+                    child.set_position(params.x, params.y)
+
+                return
+
+            case 1:
+                ...
+
+            case 2:
+                ...
+
+            case _:
+                raise ValueError(f"Invalid geometry type: {self._layout.__class__.__name__}")
+
+    def calculate_size(self) -> tuple[int, int]:
+        """
+        calculate how big the container should be
+        """
+        # make sure the geometry is up-to-date
+        self.calculate_geometry()
+
+        return pg.display.get_window_size()
