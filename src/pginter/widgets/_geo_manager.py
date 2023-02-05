@@ -23,7 +23,7 @@ class GeometryManager(SupportsChildren):
     _width_configured: bool = False
     _height_configured: bool = False
     _child_params: list[tuple[tp.Any, BetterDict]] = ...
-    _layout_params: BetterDict = ...
+    layout_params: BetterDict = ...
 
     def __init__(
             self,
@@ -34,7 +34,7 @@ class GeometryManager(SupportsChildren):
         super().__init__()
 
         self._layout = Absolute if layout is ... else layout
-        self._layout_params = BetterDict({
+        self.layout_params = BetterDict({
             "margin": margin,
             "padding": padding
         })
@@ -136,19 +136,19 @@ class GeometryManager(SupportsChildren):
                         right["total_x"] += child_size[0]
                         right["total_y"] += child_size[1]
 
-                top["total_y"] += self._layout_params.padding * len(top["children"]) - 1
-                bottom["total_y"] += self._layout_params.padding * len(bottom["children"]) - 1
+                top["total_y"] += self.layout_params.padding * len(top["children"]) - 1
+                bottom["total_y"] += self.layout_params.padding * len(bottom["children"]) - 1
 
-                left["total_x"] += self._layout_params.padding * len(left["children"]) - 1
-                right["total_x"] += self._layout_params.padding * len(right["children"]) - 1
+                left["total_x"] += self.layout_params.padding * len(left["children"]) - 1
+                right["total_x"] += self.layout_params.padding * len(right["children"]) - 1
 
                 # if not configured, set own size
                 total_x = max([top["total_x"], bottom["total_x"], left["total_x"] + right["total_x"]])
                 total_y = max([left["total_y"], right["total_y"], top["total_y"] + bottom["total_y"]])
 
                 # add margin
-                total_x += self._layout_params.margin * 2
-                total_y += self._layout_params.margin * 2
+                total_x += self.layout_params.margin * 2
+                total_y += self.layout_params.margin * 2
 
                 if not self._width_configured:
                     self._width = total_x
@@ -167,30 +167,30 @@ class GeometryManager(SupportsChildren):
                 x_cen = total_x / 2
 
                 # left
-                x_now = self._layout_params.margin
+                x_now = self.layout_params.margin
                 for child, size in zip(left["children"], left["sizes"]):
                     child.set_position(x_now, y_cen - size[1] / 2)
-                    x_now += size[0] + self._layout_params.padding
+                    x_now += size[0] + self.layout_params.padding
 
                 # right
-                x_now = total_x - self._layout_params.margin
+                x_now = total_x - self.layout_params.margin
                 for child, size in zip(right["children"], right["sizes"]):
                     child.set_position(x_now - size[0], y_cen - size[1] / 2)
-                    x_now -= size[0] + self._layout_params.padding
+                    x_now -= size[0] + self.layout_params.padding
 
                 # top
-                y_now = self._layout_params.margin
+                y_now = self.layout_params.margin
                 for child, size in zip(top["children"], top["sizes"]):
                     child.set_position(x_cen - size[0] / 2, y_now)
-                    y_now += size[1] + self._layout_params.padding
+                    y_now += size[1] + self.layout_params.padding
 
                 # bottom
-                y_now = total_y - self._layout_params.margin
+                y_now = total_y - self.layout_params.margin
                 for child, size in zip(bottom["children"], bottom["sizes"]):
                     child.set_position(x_cen - size[0] / 2, y_now - size[1])
-                    y_now -= size[1] + self._layout_params.padding
+                    y_now -= size[1] + self.layout_params.padding
 
-            case 2:
+            case 2:  # grid
                 ...
 
             case _:

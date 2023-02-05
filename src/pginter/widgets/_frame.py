@@ -25,6 +25,25 @@ class DisplayConfig(tp.TypedDict):
     border_color: Color
 
 
+def display_configurify(key: str) -> str:
+    """
+    convert a Frame init key to it's corresponding DisplayConfig key
+    """
+    replaces = [
+        ("bg_color", "bg"),
+        ("border_bottom_left_radius", "blr"),
+        ("border_bottom_right_radius", "brr"),
+        ("border_top_left_radius", "ulr"),
+        ("border_top_right_radius", "urr"),
+    ]
+
+    for init, config in replaces:
+        if key == init:
+            return config
+
+    return key
+
+
 class Frame(GeometryManager):
     """
     The base widget
@@ -38,6 +57,7 @@ class Frame(GeometryManager):
             self,
             parent: tp.Union["Frame", tp.Any],
             width: int = ...,
+            layout: int = 0,
             height: int = ...,
             bg_color: Color = ...,
             border_radius: int = ...,
@@ -77,7 +97,7 @@ class Frame(GeometryManager):
 
         self._display_config = BetterDict(display_config)
 
-        super().__init__(0, margin, padding)
+        super().__init__(layout, margin, padding)
 
         # arguments
         self.__parent = parent
@@ -110,6 +130,54 @@ class Frame(GeometryManager):
 
         self._display_config.llr = arg_or_default(border_bottom_left_radius, self._display_config.llr, ...)
         self._display_config.lrl = arg_or_default(border_bottom_right_radius, self._display_config.lrr, ...)
+
+    def configure(self, **kwargs) -> None:
+        """
+        configure any of the init parameters (except parent)
+        """
+        for key, value in kwargs.items():
+            match key:
+                case "width":
+                    self.width = value
+
+                case "height":
+                    self.height = value
+
+                case "border_radius":
+                    self._display_config.ulr = value
+                    self._display_config.urr = value
+                    self._display_config.blr = value
+                    self._display_config.brr = value
+
+                case "border_bottom_radius":
+                    self._display_config.blr = value
+                    self._display_config.brr = value
+
+                case "border_top_radius":
+                    self._display_config.ulr = value
+                    self._display_config.urr = value
+
+                case _:
+                    # check if in display config
+                    new_key = display_configurify(key)
+
+                    if new_key in self._display_config:
+                        if isinstance(value, type(self._display_config[new_key])):
+                            raise TypeError(
+                                f"Can't change \"{self._display_config[new_key]}\" to \"{value}\": "
+                                f"invalid type!"
+                            )
+
+                        self._display_config[key] = value
+
+                    elif key in self.layout_params:
+                        if isinstance(value, type(self.layout_params[new_key])):
+                            raise TypeError(
+                                f"Can't change \"{self.layout_params[new_key]}\" to \"{value}\": "
+                                f"invalid type!"
+                            )
+
+                        self.layout_params[key] = value
 
     @property
     def theme(self) -> ThemeManager:
