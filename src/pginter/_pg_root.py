@@ -7,6 +7,8 @@ the root of the window
 Author:
 Nilusink
 """
+import os.path
+
 from .widgets import GeometryManager
 from .theme import ThemeManager
 import pygame as pg
@@ -16,7 +18,7 @@ from .types import *
 
 
 DEFAULT_TITLE: str = "Window"
-DEFAULT_ICON: str = "icon.png"
+DEFAULT_ICON: str = os.path.dirname(__file__) + "/icon.png"
 
 
 class PgRoot(GeometryManager):

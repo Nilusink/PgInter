@@ -23,7 +23,8 @@ setuptools.setup(
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
     python_requires=">=3.10",
-    data_files=[
-        ('default_theme', ['src/pginter/theme/themes/default.json'])
-    ]
+    include_package_data=True
+    # data_files=[
+    #     ('pginter/theme/themes/', ['src/pginter/theme/themes/default.json'])
+    # ]
 )
