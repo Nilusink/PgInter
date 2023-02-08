@@ -204,19 +204,11 @@ class Frame(GeometryManager):
         """
         get the frames size (including children)
         """
-        calculated_size = self.calculate_size()
-
         # width
-        width = self._width
-        if width == -1:
-            width = calculated_size[0]
-            width = 0 if width == -1 else width
+        width = self._width if self._width_configured else self.assigned_width
 
         # height
-        height = self._height
-        if height == -1:
-            height = calculated_size[1]
-            height = 0 if height == -1 else height
+        height = self._height if self._height_configured else self.assigned_height
 
         return width.__floor__(), height.__floor__()
 
@@ -225,10 +217,11 @@ class Frame(GeometryManager):
         draw the frame
         """
         width, height = self.get_size()
+        print("drawing: ", (width, height), self._x, self._y)
         _surface = pg.Surface((width, height), pg.SRCALPHA)
 
         # draw the frame
-        r_rect = pg.Rect((0, 0, self._width, self._height))
+        r_rect = pg.Rect((0, 0, width, height))
         pg.draw.rect(
             _surface,
             self._display_config.bg.rgba,

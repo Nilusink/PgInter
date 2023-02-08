@@ -18,8 +18,10 @@ class GeometryManager(SupportsChildren):
     Manages how children are placed inside a parent container
     """
     _layout: int = Absolute
-    _width: float = -1   # -1 means not configured -> takes minimum size required by its children
-    _height: float = -1  # or the size it gets by the parents geometry manager
+    _width: float = 0   # -1 means not configured -> takes minimum size required by its children
+    _height: float = 0  # or the size it gets by the parents geometry manager
+    assigned_width: float = 0
+    assigned_height: float = 0
     _width_configured: bool = False
     _height_configured: bool = False
     _child_params: list[tuple[tp.Any, BetterDict]] = ...
@@ -287,12 +289,6 @@ class GeometryManager(SupportsChildren):
                         else:
                             matrix[r].append(...)
 
-                # debug matrix
-                print("\n[")
-                for row in matrix:
-                    print(f"\t{row},")
-                print("]\n")
-
                 # calculate the minimal size for each row
                 for r, row in enumerate(rows):
                     rows[r]["max_size"] = 0
@@ -316,47 +312,53 @@ class GeometryManager(SupportsChildren):
                 # calculate the container size
                 width, height = self.width, self.height
 
+                # only subtract rows that don't have a weight
                 min_width = sum([c["max_size"] for c in columns])
                 min_height = sum([r["max_size"] for r in rows])
 
-                if not self._width_configured:
-                    width = min_width
-
-                if not self._height_configured:
-                    height = min_height
-
                 # assign extra space
-                extra_width = width - min_width
-                extra_height = height - min_height
+                extra_width = width - sum([c["max_size"] for c in columns if c["weight"] == 0])
+                extra_height = height - sum([r["max_size"] for r in rows if r["weight"] == 0])
 
                 total_row_weight = sum([row["weight"] for row in rows])
                 total_column_weight = sum([column["weight"] for column in columns])
+
+                print(f"\n\nwindow_size=[{width}, {height}]\tmin_size={[min_width, min_height]}")
+                print(f"{total_row_weight=}")
+                print(f"{total_column_weight=}")
+                print(f"{extra_height=}")
+                print(f"{extra_width=}")
 
                 # assign each row and column a specific size
                 for r in range(len(rows)):
                     if total_row_weight == 0:
                         rows[r]["height"] = 0
                     else:
-                        rows[r]["height"] = ((rows[r]["weight"] / total_row_weight) * extra_height).__floor__()
+                        # assign either the minimum size or the calculated dynamic one
+                        w_size = ((rows[r]["weight"] / total_row_weight) * extra_height).__floor__()
+                        rows[r]["height"] = max([w_size, rows[r]["max_size"]])
+                        print(f"{w_size=}\t{rows[r]['max_size']=}")
 
-                    rows[r]["height"] += rows[r]["max_size"]
+                    # rows[r]["height"] += rows[r]["max_size"]
                     rows[r]["y_start"] = sum([prev_row["height"] for prev_row in rows[:r]])
 
                     for c in range(len(columns)):
                         if total_column_weight == 0:
                             columns[c]["width"] = 0
                         else:
-                            columns[c]["width"] = ((columns[c]["weight"] / total_column_weight) * extra_width).__floor__()
+                            # assign either the minimum size or the calculated dynamic one
+                            w_size = ((columns[c]["weight"] / total_column_weight) * extra_width).__floor__()
+                            columns[c]["width"] = max([w_size, columns[c]["max_size"]])
+                            print(f"{w_size=}\t{columns[c]['max_size']=}")
 
-                        columns[c]["width"] += columns[c]["max_size"]
+                        # columns[c]["width"] += columns[c]["max_size"]
                         columns[c]["x_start"] = sum([prev_col["width"] for prev_col in columns[:c]])
-
-                print(f"extra: {extra_width}, {extra_height}\t\ttotal weight: {total_row_weight}, {total_column_weight}")
 
                 # place children
                 for child, params in self._child_params:
                     # place the child proportional to the table and stickiness
-                    size = list(child.calculate_size())
+                    # size = list(child.calculate_size())
+                    size = [child._width, child._height]
 
                     row, column = params["row"], params["column"]
                     sticky = params["sticky"]
@@ -370,8 +372,11 @@ class GeometryManager(SupportsChildren):
                     x_cen = x + width / 2
                     y_cen = y + height / 2
 
-                    x_diff = x - size[0]
-                    y_diff = y - size[1]
+                    x_diff = width - size[0]
+                    y_diff = height - size[1]
+
+                    print(f"calc: {x_diff}, {y_diff}\t{size}\t{width},{height}")
+                    print(f"{sticky=}")
 
                     box_x = x_cen - size[0] / 2
                     box_y = y_cen - size[1] / 2
@@ -385,19 +390,20 @@ class GeometryManager(SupportsChildren):
                         if "e" in sticky:
                             size[0] += x_diff / 2
 
-                        child._width = size[0]
+                        child.assigned_width = size[0]
 
                     if not child._height_configured:
                         if "n" in sticky:
                             size[1] += y_diff / 2
                             box_y = y
+                            print("north: ", size, box_x, box_y, "\t\t", width, height)
 
                         if "s" in sticky:
                             size[1] += y_diff / 2
+                            print("south: ", size, box_x, box_y, "\t\t", width, height)
 
-                        child._height = size[1]
+                        child.assigned_height = size[1]
 
-                    print(f"pos: {box_x}, {box_y}\t\tsize: {size[0]}, {size[1]}")
                     child.set_position(box_x, box_y)
 
             case _:
@@ -410,4 +416,10 @@ class GeometryManager(SupportsChildren):
         # make sure the geometry is up-to-date
         self.calculate_geometry()
 
-        return self._width.__floor__(), self._height.__floor__()
+        width = self._width
+        height = self._height
+
+        width = round(width)
+        height = round(height)
+
+        return width, height
