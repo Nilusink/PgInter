@@ -25,6 +25,8 @@ class PgRoot(GeometryManager):
     _theme: ThemeManager = ...
     __background: pg.Surface = ...
     layout_params: BetterDict = ...
+    _min_size: tuple[int, int] = ...
+    _bg_configured: bool = False
 
     def __init__(
             self,
@@ -37,8 +39,11 @@ class PgRoot(GeometryManager):
     ):
         super().__init__()
         self._theme = ThemeManager()
+        self._theme.notify_on(ThemeManager.NotifyEvent.theme_reload, self.notify)
+        self._min_size = (0, 0)
 
         # args
+        self._bg_configured = bg_color is not ...
         self._bg = self._theme.root.bg.hex if bg_color is ... else bg_color
 
         self._layout_params = BetterDict({
@@ -74,6 +79,17 @@ class PgRoot(GeometryManager):
     def theme(self) -> ThemeManager:
         return self._theme
 
+    # interfacing
+    def notify(self, event: ThemeManager.NotifyEvent) -> None:
+        """
+        gets called by another class
+        """
+        match event:
+            case ThemeManager.NotifyEvent.theme_reload:
+                # the theme has been reloaded
+                if not self._bg_configured:
+                    self._bg = self.theme.root.bg.rgba
+
     # pygame stuff
     def _event_handler(self) -> None:
         """
@@ -83,6 +99,16 @@ class PgRoot(GeometryManager):
             match event.type:
                 case pg.QUIT:
                     self._running = False
+
+                # case pg.VIDEORESIZE:  # window size changed
+                #     width, height = event.size
+                #
+                #     print("updating size: ", (width, height), "\t", self._min_size)
+                #
+                #     width = max([width, self._min_size[0]])
+                #     height = max([height, self._min_size[1]])
+                #
+                #     # self.__background = pg.display.set_mode((width, height), flags=pg.RESIZABLE | pg.HWSURFACE | pg.DOUBLEBUF)
 
     def update_screen(self) -> None:
         """
@@ -162,6 +188,15 @@ class PgRoot(GeometryManager):
 
                 left["total_x"] += self._layout_params.padding * len(left["children"]) - 1
                 right["total_x"] += self._layout_params.padding * len(right["children"]) - 1
+
+                min_x = max([top["total_x"], bottom["total_x"], left["total_x"] + right["total_x"]])
+                min_y = max([left["total_y"], right["total_y"], top["total_y"] + bottom["total_y"]])
+
+                # add margin
+                min_x += self.layout_params.margin * 2
+                min_y += self.layout_params.margin * 2
+
+                self._min_size = min_x, min_y
 
                 total_x, total_y = self.calculate_size()
 
@@ -257,18 +292,22 @@ class PgRoot(GeometryManager):
                 for r, row in enumerate(rows):
                     rows[r]["max_size"] = 0
 
-                    for child, _ in row["children"]:
+                    for child, params in row["children"]:
                         _, y = child.calculate_size()
+
+                        y += 2 * params.margin
 
                         if y > rows[r]["max_size"]:
                             rows[r]["max_size"] = y
 
-                    # calculate the minimal size for each column
+                # calculate the minimal size for each column
                 for c, column in enumerate(columns):
                     columns[c]["max_size"] = 0
 
-                    for child, _ in column["children"]:
+                    for child, params in column["children"]:
                         x, _ = child.calculate_size()
+
+                        x += 2 * params.margin
 
                         if x > columns[c]["max_size"]:
                             columns[c]["max_size"] = x
@@ -280,6 +319,9 @@ class PgRoot(GeometryManager):
                 min_width = sum([c["max_size"] for c in columns])
                 min_height = sum([r["max_size"] for r in rows])
 
+                # set the windows minimal size
+                self._min_size = min_width, min_height
+
                 # assign extra space
                 extra_width = width - sum([c["max_size"] for c in columns if c["weight"] == 0])
                 extra_height = height - sum([r["max_size"] for r in rows if r["weight"] == 0])
@@ -287,11 +329,11 @@ class PgRoot(GeometryManager):
                 total_row_weight = sum([row["weight"] for row in rows])
                 total_column_weight = sum([column["weight"] for column in columns])
 
-                print(f"\n\nwindow_size=[{width}, {height}]\tmin_size={[min_width, min_height]}")
-                print(f"{total_row_weight=}")
-                print(f"{total_column_weight=}")
-                print(f"{extra_height=}")
-                print(f"{extra_width=}")
+                # print(f"\n\nwindow_size=[{width}, {height}]\tmin_size={[min_width, min_height]}")
+                # print(f"{total_row_weight=}")
+                # print(f"{total_column_weight=}")
+                # print(f"{extra_height=}")
+                # print(f"{extra_width=}")
 
                 # assign each row and column a specific size
                 for r in range(len(rows)):
@@ -301,7 +343,7 @@ class PgRoot(GeometryManager):
                         # assign either the minimum size or the calculated dynamic one
                         w_size = ((rows[r]["weight"] / total_row_weight) * extra_height).__floor__()
                         rows[r]["height"] = max([w_size, rows[r]["max_size"]])
-                        print(f"{w_size=}\t{rows[r]['max_size']=}")
+                        # print(f"{w_size=}\t{rows[r]['max_size']=}")
 
                     # rows[r]["height"] += rows[r]["max_size"]
                     rows[r]["y_start"] = sum([prev_row["height"] for prev_row in rows[:r]])
@@ -313,17 +355,17 @@ class PgRoot(GeometryManager):
                             # assign either the minimum size or the calculated dynamic one
                             w_size = ((columns[c]["weight"] / total_column_weight) * extra_width).__floor__()
                             columns[c]["width"] = max([w_size, columns[c]["max_size"]])
-                            print(f"{w_size=}\t{columns[c]['max_size']=}")
+                            # print(f"{w_size=}\t{columns[c]['max_size']=}")
 
                         # columns[c]["width"] += columns[c]["max_size"]
                         columns[c]["x_start"] = sum([prev_col["width"] for prev_col in columns[:c]])
 
-                        pg.draw.rect(
-                            self.__background,
-                            (255, 0, 0, 255),
-                            pg.Rect(columns[c]["x_start"], rows[r]["y_start"], columns[c]["width"], rows[r]["height"]),
-                            width=1
-                        )
+                        # pg.draw.rect(
+                        #     self.__background,
+                        #     (255, 0, 0, 255),
+                        #     pg.Rect(columns[c]["x_start"], rows[r]["y_start"], columns[c]["width"], rows[r]["height"]),
+                        #     width=1
+                        # )
 
                 # place children
                 for child, params in self._child_params:
@@ -346,8 +388,8 @@ class PgRoot(GeometryManager):
                     x_diff = width - size[0]
                     y_diff = height - size[1]
 
-                    print(f"calc: {x_diff}, {y_diff}\t{size}\t{width},{height}")
-                    print(f"{sticky=}")
+                    # print(f"calc: {x_diff}, {y_diff}\t{size}\t{width},{height}")
+                    # print(f"{sticky=}")
 
                     box_x = x_cen - size[0] / 2
                     box_y = y_cen - size[1] / 2
@@ -355,23 +397,23 @@ class PgRoot(GeometryManager):
                     # assign stickiness
                     if not child._width_configured:
                         if "w" in sticky:
-                            size[0] += x_diff / 2
-                            box_x = x
+                            size[0] += (x_diff / 2) - params.margin
+                            box_x = x + params.margin
 
                         if "e" in sticky:
-                            size[0] += x_diff / 2
+                            size[0] += (x_diff / 2) - params.margin
 
                         child.assigned_width = size[0]
 
                     if not child._height_configured:
                         if "n" in sticky:
-                            size[1] += y_diff / 2
-                            box_y = y
-                            print("north: ", size, box_x, box_y, "\t\t", width, height)
+                            size[1] += (y_diff / 2) - params.margin
+                            box_y = y + params.margin
+                            # print("north: ", size, box_x, box_y, "\t\t", width, height)
 
                         if "s" in sticky:
-                            size[1] += y_diff / 2
-                            print("south: ", size, box_x, box_y, "\t\t", width, height)
+                            size[1] += (y_diff / 2) - params.margin
+                            # print("south: ", size, box_x, box_y, "\t\t", width, height)
 
                         child.assigned_height = size[1]
 

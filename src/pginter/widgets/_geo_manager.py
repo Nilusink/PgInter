@@ -293,18 +293,22 @@ class GeometryManager(SupportsChildren):
                 for r, row in enumerate(rows):
                     rows[r]["max_size"] = 0
 
-                    for child, _ in row["children"]:
+                    for child, params in row["children"]:
                         _, y = child.calculate_size()
+
+                        y += 2 * params.margin
 
                         if y > rows[r]["max_size"]:
                             rows[r]["max_size"] = y
 
-                # calculate the minimal size for each column
+                    # calculate the minimal size for each column
                 for c, column in enumerate(columns):
                     columns[c]["max_size"] = 0
 
-                    for child, _ in column["children"]:
+                    for child, params in column["children"]:
                         x, _ = child.calculate_size()
+
+                        x += 2 * params.margin
 
                         if x > columns[c]["max_size"]:
                             columns[c]["max_size"] = x
@@ -323,11 +327,11 @@ class GeometryManager(SupportsChildren):
                 total_row_weight = sum([row["weight"] for row in rows])
                 total_column_weight = sum([column["weight"] for column in columns])
 
-                print(f"\n\nwindow_size=[{width}, {height}]\tmin_size={[min_width, min_height]}")
-                print(f"{total_row_weight=}")
-                print(f"{total_column_weight=}")
-                print(f"{extra_height=}")
-                print(f"{extra_width=}")
+                # print(f"\n\nwindow_size=[{width}, {height}]\tmin_size={[min_width, min_height]}")
+                # print(f"{total_row_weight=}")
+                # print(f"{total_column_weight=}")
+                # print(f"{extra_height=}")
+                # print(f"{extra_width=}")
 
                 # assign each row and column a specific size
                 for r in range(len(rows)):
@@ -337,7 +341,7 @@ class GeometryManager(SupportsChildren):
                         # assign either the minimum size or the calculated dynamic one
                         w_size = ((rows[r]["weight"] / total_row_weight) * extra_height).__floor__()
                         rows[r]["height"] = max([w_size, rows[r]["max_size"]])
-                        print(f"{w_size=}\t{rows[r]['max_size']=}")
+                        # print(f"{w_size=}\t{rows[r]['max_size']=}")
 
                     # rows[r]["height"] += rows[r]["max_size"]
                     rows[r]["y_start"] = sum([prev_row["height"] for prev_row in rows[:r]])
@@ -349,7 +353,7 @@ class GeometryManager(SupportsChildren):
                             # assign either the minimum size or the calculated dynamic one
                             w_size = ((columns[c]["weight"] / total_column_weight) * extra_width).__floor__()
                             columns[c]["width"] = max([w_size, columns[c]["max_size"]])
-                            print(f"{w_size=}\t{columns[c]['max_size']=}")
+                            # print(f"{w_size=}\t{columns[c]['max_size']=}")
 
                         # columns[c]["width"] += columns[c]["max_size"]
                         columns[c]["x_start"] = sum([prev_col["width"] for prev_col in columns[:c]])
@@ -375,8 +379,8 @@ class GeometryManager(SupportsChildren):
                     x_diff = width - size[0]
                     y_diff = height - size[1]
 
-                    print(f"calc: {x_diff}, {y_diff}\t{size}\t{width},{height}")
-                    print(f"{sticky=}")
+                    # print(f"calc: {x_diff}, {y_diff}\t{size}\t{width},{height}")
+                    # print(f"{sticky=}")
 
                     box_x = x_cen - size[0] / 2
                     box_y = y_cen - size[1] / 2
@@ -384,23 +388,23 @@ class GeometryManager(SupportsChildren):
                     # assign stickiness
                     if not child._width_configured:
                         if "w" in sticky:
-                            size[0] += x_diff / 2
-                            box_x = x
+                            size[0] += (x_diff / 2) - params.margin
+                            box_x = x + params.margin
 
                         if "e" in sticky:
-                            size[0] += x_diff / 2
+                            size[0] += (x_diff / 2) - params.margin
 
                         child.assigned_width = size[0]
 
                     if not child._height_configured:
                         if "n" in sticky:
-                            size[1] += y_diff / 2
-                            box_y = y
-                            print("north: ", size, box_x, box_y, "\t\t", width, height)
+                            size[1] += (y_diff / 2) - params.margin
+                            box_y = y + params.margin
+                            # print("north: ", size, box_x, box_y, "\t\t", width, height)
 
                         if "s" in sticky:
-                            size[1] += y_diff / 2
-                            print("south: ", size, box_x, box_y, "\t\t", width, height)
+                            size[1] += (y_diff / 2) - params.margin
+                            # print("south: ", size, box_x, box_y, "\t\t", width, height)
 
                         child.assigned_height = size[1]
 

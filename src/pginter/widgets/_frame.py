@@ -25,6 +25,16 @@ class DisplayConfig(tp.TypedDict):
     border_color: Color
 
 
+class DisplayConfigConfigured(tp.TypedDict):
+    bg: bool
+    ulr: bool
+    urr: bool
+    llr: bool
+    lrr: bool
+    border_width: bool
+    border_color: bool
+
+
 def display_configurify(key: str) -> str:
     """
     convert a Frame init key to it's corresponding DisplayConfig key
@@ -50,6 +60,7 @@ class Frame(GeometryManager):
     """
     __parent: tp.Union["Frame", tp.Any]
     _display_config: BetterDict = ...
+    _display_config_configured: BetterDict = ...
     _x: int = -1
     _y: int = -1
 
@@ -71,6 +82,8 @@ class Frame(GeometryManager):
             border_color: Color = ...,
             margin: int = ...,
             padding: int = ...,
+            min_width: int = ...,
+            min_height: int = ...
     ) -> None:
         """
         the most basic widget: a frame
@@ -84,7 +97,15 @@ class Frame(GeometryManager):
         :param border_color: the color of the border
         """
 
+        if min_width is not ...:
+            self._width = min_width
+
+        if min_height is not ...:
+            self._height = min_height
+
         self.__parent = parent
+
+        self.__parent.theme.notify_on(ThemeManager.NotifyEvent.theme_reload, self.notify)
 
         # mutable defaults
         display_config: DisplayConfig = {
@@ -97,7 +118,18 @@ class Frame(GeometryManager):
             "border_color": ...,
         }
 
+        display_config_configured: DisplayConfigConfigured = {
+            "bg": bg_color is not ...,
+            "ulr": border_radius is not ... or border_top_radius is not ... or border_top_left_radius is not ...,
+            "urr": border_radius is not ... or border_top_radius is not ... or border_top_right_radius is not ...,
+            "llr": border_radius is not ... or border_bottom_radius is not ... or border_bottom_left_radius is not ...,
+            "lrr": border_radius is not ... or border_bottom_radius is not ... or border_bottom_right_radius is not ...,
+            "border_width": border_width is not ...,
+            "border_color": border_color is not ...,
+        }
+
         self._display_config = BetterDict(display_config)
+        self._display_config_configured = BetterDict(display_config_configured)
 
         if margin is ...:
             margin = self.theme.frame.margin if "margin" in self.theme.frame else 0
@@ -114,7 +146,10 @@ class Frame(GeometryManager):
         if height is not ...:
             self.height = height
 
-        self._display_config["bg"] = self.theme.frame.bg if bg_color is ... else bg_color
+        self._display_config["bg"] = self.theme.frame.bg1 if bg_color is ... else bg_color
+        if isinstance(self.__parent, Frame) and self.__parent._display_config["bg"] == self.theme.frame.bg1:
+            self._display_config["bg"] = self.theme.frame.bg2 if bg_color is ... else bg_color
+
         if border_width is not ...:
             self._display_config["border_width"] = border_width
 
@@ -130,9 +165,8 @@ class Frame(GeometryManager):
         if border_top_radius is ... and "border_top_radius" in self.theme.frame:
             border_top_radius = self.theme.frame.border_top_radius
 
-        if border_radius is not ...:
-            self._display_config["ulr"] = self._display_config["urr"] = border_radius
-            self._display_config["llr"] = self._display_config["lrr"] = border_radius
+        self._display_config["ulr"] = self._display_config["urr"] = border_radius
+        self._display_config["llr"] = self._display_config["lrr"] = border_radius
 
         if border_top_radius is not ...:
             self._display_config["ulr"] = border_top_radius
@@ -200,6 +234,27 @@ class Frame(GeometryManager):
     def theme(self) -> ThemeManager:
         return self.__parent.theme
 
+    # interfacing
+    def notify(self, event: ThemeManager.NotifyEvent) -> None:
+        """
+        gets called by another class
+        """
+        match event:
+            case ThemeManager.NotifyEvent.theme_reload:
+                # the theme has been reloaded
+                if not self._display_config_configured.bg:
+                    if isinstance(self.__parent, Frame) and self.__parent._display_config["bg"] == self.theme.frame.bg1:
+                        self._display_config.bg = self.theme.frame.bg2
+
+                    else:
+                        self._display_config.bg = self.theme.frame.bg1
+
+                if not self._display_config_configured.border_color:
+                    self._display_config.border_color = self.theme.frame.border
+
+                if not self._display_config_configured.border_radius:
+                    self._display_config.border_radius = self.theme.frame.border_radius
+
     def get_size(self) -> tuple[int, int]:
         """
         get the frames size (including children)
@@ -217,7 +272,7 @@ class Frame(GeometryManager):
         draw the frame
         """
         width, height = self.get_size()
-        print("drawing: ", (width, height), self._x, self._y)
+        # print("drawing: ", (width, height), self._x, self._y)
         _surface = pg.Surface((width, height), pg.SRCALPHA)
 
         # draw the frame
@@ -286,6 +341,7 @@ class Frame(GeometryManager):
             row: int,
             column: int,
             sticky: str = "",
+            margin: int = 0,
     ) -> None:
         """
         grid the frame into a parent container
@@ -293,11 +349,12 @@ class Frame(GeometryManager):
         :param row: the row the item should be placed in
         :param column: the column the item should be placed in
         :param sticky: expansion, can be a combination of "n", "e", "s", "w"
+        :param margin: the distance to the grids borders
         """
         if self.__parent.layout is not Grid:
             raise TypeError("can't grid in a container that is not managed by \"Grid\"")
 
-        self.__parent.add_child(self, row=row, column=column, sticky=sticky)
+        self.__parent.add_child(self, row=row, column=column, sticky=sticky, margin=margin)
 
     def set_position(self, x: int, y: int) -> None:
         """
