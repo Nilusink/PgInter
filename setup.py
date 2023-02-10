@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="pginter",
-    version="0.0.1",
+    version="0.0.5",
     author="Nilusink",
     author_email="nilusink@protonmail.com",
     description="A python GUI interface, based on pygame",
@@ -23,4 +23,8 @@ setuptools.setup(
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
     python_requires=">=3.10",
+    include_package_data=True
+    # data_files=[
+    #     ('pginter/theme/themes/', ['src/pginter/theme/themes/default.json'])
+    # ]
 )
