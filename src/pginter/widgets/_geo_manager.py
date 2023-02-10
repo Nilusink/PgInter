@@ -314,7 +314,7 @@ class GeometryManager(SupportsChildren):
                             columns[c]["max_size"] = x
 
                 # calculate the container size
-                width, height = self.width, self.height
+                width, height = self.assigned_width, self.assigned_height
 
                 # only subtract rows that don't have a weight
                 min_width = sum([c["max_size"] for c in columns])
