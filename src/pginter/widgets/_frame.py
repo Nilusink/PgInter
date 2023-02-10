@@ -8,8 +8,8 @@ Author:
 Nilusink
 """
 from ._geo_manager import GeometryManager
-from ..theme import ThemeManager
 from ..utils import arg_or_default
+from ..theme import ThemeManager
 from ..types import *
 import typing as tp
 import pygame as pg
@@ -58,7 +58,7 @@ class Frame(GeometryManager):
     """
     The base widget
     """
-    __parent: tp.Union["Frame", tp.Any]
+    __parent: tp.Union["Frame", tp.Any] = ...
     _display_config: BetterDict = ...
     _display_config_configured: BetterDict = ...
     _x: int = -1
@@ -69,7 +69,7 @@ class Frame(GeometryManager):
             parent: tp.Union["Frame", tp.Any],
             width: int = ...,
             height: int = ...,
-            bg_color: Color = ...,
+            bg: Color = ...,
             layout: int = 0,
             border_radius: int = ...,
             border_bottom_radius: int = ...,
@@ -91,7 +91,7 @@ class Frame(GeometryManager):
         :param parent: the frames parent container
         :param width: width of the frame
         :param height: height of the frame
-        :param bg_color: background color of the frame
+        :param bg: background color of the frame
         :param border_radius: border radius of the box (all four corners)
         :param border_width: how thick the border of the box should be
         :param border_color: the color of the border
@@ -115,11 +115,11 @@ class Frame(GeometryManager):
             "llr": self.theme.frame.border_bottom_left_radius if "border_bottom_left_radius" in self.theme.frame else 0,
             "lrr": self.theme.frame.border_bottom_right_radius if "border_bottom_right_radius" in self.theme.frame else 0,
             "border_width": self.theme.frame.border_width if "border_width" in self.theme.frame else 0,
-            "border_color": ...,
+            "border_color": self.theme.frame.border if "border" in self.theme.frame else Color.from_rgb(255, 0, 0),
         }
 
         display_config_configured: DisplayConfigConfigured = {
-            "bg": bg_color is not ...,
+            "bg": bg is not ...,
             "ulr": border_radius is not ... or border_top_radius is not ... or border_top_left_radius is not ...,
             "urr": border_radius is not ... or border_top_radius is not ... or border_top_right_radius is not ...,
             "llr": border_radius is not ... or border_bottom_radius is not ... or border_bottom_left_radius is not ...,
@@ -146,9 +146,11 @@ class Frame(GeometryManager):
         if height is not ...:
             self.height = height
 
-        self._display_config["bg"] = self.theme.frame.bg1 if bg_color is ... else bg_color
+        self._display_config["bg"] = self.theme.frame.bg1 if bg is ... else bg
         if isinstance(self.__parent, Frame) and self.__parent._display_config["bg"] == self.theme.frame.bg1:
-            self._display_config["bg"] = self.theme.frame.bg2 if bg_color is ... else bg_color
+            self._display_config["bg"] = self.theme.frame.bg2 if bg is ... else bg
+
+        print(f"set background: ", self._display_config.bg, bg)
 
         if border_width is not ...:
             self._display_config["border_width"] = border_width
@@ -182,6 +184,14 @@ class Frame(GeometryManager):
         self._display_config.llr = arg_or_default(border_bottom_left_radius, self._display_config.llr, ...)
         self._display_config.lrl = arg_or_default(border_bottom_right_radius, self._display_config.lrr, ...)
 
+    @property
+    def theme(self) -> ThemeManager:
+        return self.__parent.theme
+
+    @property
+    def parent(self) -> tp.Union["Frame", tp.Any]:
+        return self.__parent
+
     def configure(self, **kwargs) -> None:
         """
         configure any of the init parameters (except parent)
@@ -193,6 +203,12 @@ class Frame(GeometryManager):
 
                 case "height":
                     self.height = value
+
+                case "min_width":
+                    self._width = value
+
+                case "min_height":
+                    self._height = value
 
                 case "border_radius":
                     self._display_config.ulr = value
@@ -229,10 +245,6 @@ class Frame(GeometryManager):
                             )
 
                         self.layout_params[key] = value
-
-    @property
-    def theme(self) -> ThemeManager:
-        return self.__parent.theme
 
     # interfacing
     def notify(self, event: ThemeManager.NotifyEvent) -> None:
@@ -272,7 +284,7 @@ class Frame(GeometryManager):
         draw the frame
         """
         width, height = self.get_size()
-        # print("drawing: ", (width, height), self._x, self._y)
+        # print(f"drawing: \"{type(self).__name__}\"", (width, height), self._x, self._y, self._display_config.bg)
         _surface = pg.Surface((width, height), pg.SRCALPHA)
 
         # draw the frame

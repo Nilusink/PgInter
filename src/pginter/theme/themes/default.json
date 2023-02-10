@@ -7,5 +7,10 @@
     "bg2": ["#666", "#ccc"],
     "border": ["#666", "#eee"],
     "border_radius": 20
+  },
+  "label": {
+    "bg": [0, 0, 0, 0],
+    "fg": ["#fff", "#000"],
+    "font_size": 35
   }
 }
