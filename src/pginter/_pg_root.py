@@ -21,6 +21,7 @@ DEFAULT_ICON: str = os.path.dirname(__file__) + "/icon.png"
 
 
 class PgRoot(GeometryManager):
+    _focus_item: GeometryManager | None = None
     _running: bool = True
     _theme: ThemeManager = ...
     __background: pg.Surface = ...
@@ -78,6 +79,29 @@ class PgRoot(GeometryManager):
     @property
     def theme(self) -> ThemeManager:
         return self._theme
+
+    def get_focus(self) -> GeometryManager | None:
+        """
+        get the currently focused item
+        """
+        return self._focus_item
+
+    def set_focus(self, widget: tp.Union["GeometryManager", None, tp.Any] = None):
+        """
+        set the focused item
+        """
+        self._focus_item.stop_focus()
+
+        if widget is not None:
+            widget.set_focus()
+            self._focus_item = widget
+
+    def notify_focus(self, widget: tp.Union["GeometryManager", None] = None):
+        """
+        notify the root that a widget has been set as focus
+        """
+        if self._focus_item != widget:
+            self.set_focus(widget)
 
     # interfacing
     def notify(self, event: ThemeManager.NotifyEvent) -> None:

@@ -61,6 +61,7 @@ class Frame(GeometryManager):
     __parent: tp.Union["Frame", tp.Any] = ...
     _display_config: BetterDict = ...
     _display_config_configured: BetterDict = ...
+    _focused: bool = False
     _x: int = -1
     _y: int = -1
 
@@ -191,6 +192,26 @@ class Frame(GeometryManager):
     @property
     def parent(self) -> tp.Union["Frame", tp.Any]:
         return self.__parent
+
+    def set_focus(self):
+        """
+        set this item as currently focused
+        """
+        self.parent.notify_focus(self)
+        self._focused = True
+
+    def stop_focus(self):
+        """
+        remove focus from this item
+        """
+        self.parent.notify_focus()
+        self._focused = False
+
+    def notify_focus(self, widget: tp.Union["GeometryManager", None] = None):
+        """
+        notify the root that a widget has been set as focus
+        """
+        self.parent.notify_focus(widget)
 
     def configure(self, **kwargs) -> None:
         """
