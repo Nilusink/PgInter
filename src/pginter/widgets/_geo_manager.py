@@ -72,6 +72,16 @@ class GeometryManager(SupportsChildren):
         self._height = value
         self._height_configured = True
 
+    def set_focus(self, widget: "GeometryManager"):
+        """
+        set this item as currently focused
+        """
+
+    def stop_focus(self):
+        """
+        remove focus from this item
+        """
+
     # layout configuration
     def set_layout(self, layout: int) -> None:
         """
