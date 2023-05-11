@@ -7,8 +7,10 @@ types for the geometry manager
 Author:
 Nilusink
 """
+from enum import Enum
 
 
-Absolute = 0
-Pack = 1
-Grid = 2
+class Layout(Enum):
+    Absolute = "absolute"
+    Pack = "pack"
+    Grid = "grid"

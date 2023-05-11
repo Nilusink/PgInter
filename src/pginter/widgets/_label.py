@@ -7,7 +7,7 @@ A thing to display text
 Author:
 Nilusink
 """
-from ..types import Color, BetterDict
+from ..types import Color, BetterDict, Layout
 from ..utils import arg_or_default
 from ._frame import Frame
 import pygame as pg
@@ -46,7 +46,7 @@ class Label(Frame):
         super().__init__(
             parent=parent,
             bg=arg_or_default(bg, parent.theme.label.bg),
-            layout=2,
+            layout=Layout.Grid,
             **args
         )
 

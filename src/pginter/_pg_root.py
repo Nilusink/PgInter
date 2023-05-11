@@ -165,14 +165,14 @@ class PgRoot(GeometryManager):
         calculate how each individual child should be placed
         """
         match self._layout:
-            case 0:  # Absolute
+            case Layout.Absolute:  # Absolute
                 # since the positioning is absolute, the children should not influence the parents size
                 for child, params in self._child_params:
                     child.set_position(params.x, params.y)
 
                 return
 
-            case 1:
+            case Layout.Pack:
                 directional_dict: dict[str, int | list] = {"total_x": 0, "total_y": 0, "children": [], "sizes": []}
                 top = deepcopy(directional_dict)
                 bottom = deepcopy(directional_dict)
@@ -252,7 +252,7 @@ class PgRoot(GeometryManager):
                     child.set_position(x_cen - size[0] / 2, y_now - size[1])
                     y_now -= size[1] + self._layout_params.padding
 
-            case 2:
+            case Layout.Grid:
                 rows: list[dict[str, tp.Any | float]] = []
                 columns: list[dict[str, tp.Any | float]] = []
 

@@ -62,6 +62,9 @@ class Frame(GeometryManager):
     _display_config: BetterDict = ...
     _display_config_configured: BetterDict = ...
     _focused: bool = False
+    _style: Style = ...
+    _hover_style: Style = ...
+    _active_style: Style = ...
     _x: int = -1
     _y: int = -1
 
@@ -71,7 +74,7 @@ class Frame(GeometryManager):
             width: int = ...,
             height: int = ...,
             bg: Color = ...,
-            layout: int = 0,
+            layout: Layout = 0,
             border_radius: int = ...,
             border_bottom_radius: int = ...,
             border_top_radius: int = ...,
@@ -84,10 +87,14 @@ class Frame(GeometryManager):
             margin: int = ...,
             padding: int = ...,
             min_width: int = ...,
-            min_height: int = ...
+            min_height: int = ...,
+            style: Style = ...,
+            active_style: Style = ...,
+            hover_style: Style = ...
     ) -> None:
         """
-        the most basic widget: a frame
+        The most basic widget: a frame.
+        When using the  style  property, all other styles will be overwritten!
 
         :param parent: the frames parent container
         :param width: width of the frame
@@ -97,7 +104,11 @@ class Frame(GeometryManager):
         :param border_width: how thick the border of the box should be
         :param border_color: the color of the border
         """
+        self._style = style if style is not ... else Style()
+        self._active_style = active_style if active_style is not ... else Style()
+        self._hover_style = hover_style if hover_style is not ... else Style()
 
+        # TODO: implement styles
         if min_width is not ...:
             self._width = min_width
 
@@ -212,6 +223,16 @@ class Frame(GeometryManager):
         notify the root that a widget has been set as focus
         """
         self.parent.notify_focus(widget)
+
+    def _on_focus(self) -> None:
+        """
+        called when button is clicked
+        """
+
+    def _on_hover(self) -> None:
+        """
+        called on hover
+        """
 
     def configure(self, **kwargs) -> None:
         """
@@ -359,7 +380,7 @@ class Frame(GeometryManager):
         :param x: x-position
         :param y: y-position
         """
-        if self.__parent.layout is not Absolute:
+        if self.__parent.layout is not Layout.Absolute:
             raise TypeError("can't place in a container that is not managed by \"Absolute\"")
 
         self.__parent.add_child(self, x=x, y=y)
@@ -373,7 +394,7 @@ class Frame(GeometryManager):
 
         :param anchor: where to orient the frame at (direction)
         """
-        if self.__parent.layout is not Pack:
+        if self.__parent.layout is not Layout.Pack:
             raise TypeError(
                 "can't pack in a container that is not managed by \"Pack\"."
                 f" Configured Manager: {self.__parent.layout}"
@@ -396,7 +417,7 @@ class Frame(GeometryManager):
         :param sticky: expansion, can be a combination of "n", "e", "s", "w"
         :param margin: the distance to the grids borders
         """
-        if self.__parent.layout is not Grid:
+        if self.__parent.layout is not Layout.Grid:
             raise TypeError("can't grid in a container that is not managed by \"Grid\"")
 
         self.__parent.add_child(self, row=row, column=column, sticky=sticky, margin=margin)

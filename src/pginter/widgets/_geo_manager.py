@@ -7,7 +7,7 @@ How children are placed
 Author:
 Nilusink
 """
-from ..types import Absolute, Pack, Grid, BetterDict, TOP, BOTTOM, LEFT, RIGHT
+from ..types import Layout, BetterDict, TOP, BOTTOM, LEFT, RIGHT
 from ._supports_children import SupportsChildren
 from copy import deepcopy
 import typing as tp
@@ -17,7 +17,7 @@ class GeometryManager(SupportsChildren):
     """
     Manages how children are placed inside a parent container
     """
-    _layout: int = Absolute
+    _layout: Layout = Layout.Absolute
     _width: float = 0   # -1 means not configured -> takes minimum size required by its children
     _height: float = 0  # or the size it gets by the parents geometry manager
     assigned_width: float = 0
@@ -30,13 +30,13 @@ class GeometryManager(SupportsChildren):
 
     def __init__(
             self,
-            layout: int = ...,
+            layout: Layout = ...,
             margin: int = 0,
             padding: int = 0
     ):
         super().__init__()
 
-        self._layout = Absolute if layout is ... else layout
+        self._layout = Layout.Absolute if layout is ... else layout
         self.layout_params = BetterDict({
             "margin": margin,
             "padding": padding
@@ -48,7 +48,7 @@ class GeometryManager(SupportsChildren):
         })
 
     @property
-    def layout(self) -> int:
+    def layout(self) -> Layout:
         """
         the containers layout type
         """
@@ -84,11 +84,11 @@ class GeometryManager(SupportsChildren):
         """
 
     # layout configuration
-    def set_layout(self, layout: int) -> None:
+    def set_layout(self, layout: Layout) -> None:
         """
         set the container's layout type
         """
-        if layout not in (Absolute, Pack, Grid):
+        if layout not in Layout:
             raise ValueError("Invalid container layout: ", layout)
 
         if len(self._child_params) > 0:
@@ -146,13 +146,13 @@ class GeometryManager(SupportsChildren):
         calculate how each individual child should be placed
         """
         match self._layout:
-            case 0:  # Absolute
+            case Layout.Absolute:
                 # since the positioning is absolute,
                 # the children should not influence the parents size
                 for child, params in self._child_params:
                     child.set_position(params.x, params.y)
 
-            case 1:  # pack
+            case Layout.Pack:
                 directional_dict: dict[str, int | list] = {
                     "total_x": 0,
                     "total_y": 0,
@@ -248,7 +248,7 @@ class GeometryManager(SupportsChildren):
                     child.set_position(x_cen - size[0] / 2, y_now - size[1])
                     y_now -= size[1] + self.layout_params.padding
 
-            case 2:  # grid
+            case Layout.Grid:
                 rows: list[dict[str, tp.Any | float]] = []
                 columns: list[dict[str, tp.Any | float]] = []
 

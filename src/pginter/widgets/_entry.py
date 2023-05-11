@@ -7,7 +7,7 @@ _entry.py
 Author:
 Nilusink
 """
-from ..types import Color, Grid
+from ..types import Color, Layout
 from ._label import Label
 from ._frame import Frame
 import typing as tp
@@ -37,7 +37,7 @@ class Entry(Frame):
             min_height=10,
             **kwargs
         )
-        self.set_layout(Grid)
+        self.set_layout(Layout.Grid)
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
