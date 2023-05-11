@@ -292,11 +292,15 @@ class Frame(GeometryManager):
         """
         get the frames size (including children)
         """
+        # print(f"getting frame size: {self.width, self.height}")
+
         # width
-        width = self._width if self._width_configured else self.assigned_width
+        width = self._width if self._width_configured else \
+            self.assigned_width
 
         # height
-        height = self._height if self._height_configured else self.assigned_height
+        height = self._height if self._height_configured else \
+            self.assigned_height
 
         return width.__floor__(), height.__floor__()
 
@@ -305,6 +309,11 @@ class Frame(GeometryManager):
         draw the frame
         """
         width, height = self.get_size()
+
+        # print(f"frame size: {width, height=}, "
+        #       f"{self.assigned_width, self.assigned_height=}, "
+        #       f"{self._width_configured, self._height_configured=}")
+
         # print(f"drawing: \"{type(self).__name__}\"", (width, height), self._x, self._y, self._display_config.bg)
         _surface = pg.Surface((width, height), pg.SRCALPHA)
 
@@ -365,7 +374,10 @@ class Frame(GeometryManager):
         :param anchor: where to orient the frame at (direction)
         """
         if self.__parent.layout is not Pack:
-            raise TypeError("can't pack in a container that is not managed by \"Pack\"")
+            raise TypeError(
+                "can't pack in a container that is not managed by \"Pack\"."
+                f" Configured Manager: {self.__parent.layout}"
+            )
 
         self.__parent.add_child(self, anchor=anchor.lower())
 

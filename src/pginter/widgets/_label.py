@@ -9,7 +9,6 @@ Nilusink
 """
 from ..types import Color, BetterDict
 from ..utils import arg_or_default
-from ..theme import ThemeManager
 from ._frame import Frame
 import pygame as pg
 import typing as tp
@@ -67,25 +66,41 @@ class Label(Frame):
         draw the Label
         """
         # get text
-        r_text = self._font.render(self._config.text, True, self._config.fg.rgba)
+        r_text = self._font.render(
+            self._config.text,
+            True,
+            self._config.fg.rgba
+        )
 
-        size = r_text.get_size()
+        width, height = r_text.get_size()
+        bg_width, bg_height = self.get_size()
 
-        border_radius = max([self._display_config.ulr, self._display_config.urr, self._display_config.llr, self._display_config.lrr])
+        border_radius = max([
+            self._display_config.ulr,
+            self._display_config.urr,
+            self._display_config.llr,
+            self._display_config.lrr
+        ])
         frame_size = (
-            size[0] + border_radius,
-            size[1] + border_radius
+            width + border_radius,
+            height + border_radius
         )
 
         self.configure(min_width=frame_size[0], min_height=frame_size[1])
+        self.assigned_width = frame_size[0]
+        self.assigned_height = frame_size[1]
 
         # draw frame
         super().draw(surface)
 
-        # add text
-        pos = list(surface.get_rect().center)
+        # get frame center
+        center_x = self._x + bg_width / 2
+        center_y = self._y + bg_height / 2
 
-        pos[0] -= size[0] / 2
-        pos[1] -= size[1] / 2
+        # center label on frame center
+        pos = (
+            center_x - width / 2,
+            center_y - height / 2
+        )
 
         surface.blit(r_text, pos)
