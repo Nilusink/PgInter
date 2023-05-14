@@ -76,10 +76,10 @@ class Label(Frame):
         bg_width, bg_height = self.get_size()
 
         border_radius = max([
-            self._display_config.ulr,
-            self._display_config.urr,
-            self._display_config.llr,
-            self._display_config.lrr
+            self._style.borderTopLeftRadius,
+            self._style.borderTopRightRadius,
+            self._style.borderBottomLeftRadius,
+            self._style.borderBottomRightRadius
         ])
         frame_size = (
             width + border_radius,

@@ -57,8 +57,28 @@ class Color:
 
     # properties
     @property
+    def r(self) -> float:
+        return self._rgb[0]
+
+    @property
+    def g(self) -> float:
+        return self._rgb[1]
+
+    @property
+    def b(self) -> float:
+        return self._rgb[2]
+
+    @property
     def rgb(self) -> tuple[float, float, float]:
         return self._rgb
+
+    @property
+    def irgb(self) -> tuple[int, int, int]:
+        return (
+            int(self.r),
+            int(self.g),
+            int(self.b)
+        )
 
     @property
     def rgba(self) -> tuple[float, float, float, float]:
@@ -76,6 +96,15 @@ class Color:
             raise ValueError(f"The rgb tuple must have a length of either 3 or 4!  (not {len(value)})")
 
         self._recalculate_colors("r")
+
+    @property
+    def irgba(self) -> tuple[int, int, int, int]:
+        return (
+            int(self.r),
+            int(self.g),
+            int(self.b),
+            int(self._alpha)
+        )
 
     @property
     def hex(self) -> str:

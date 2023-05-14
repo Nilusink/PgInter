@@ -59,8 +59,6 @@ class Frame(GeometryManager):
     The base widget
     """
     __parent: tp.Union["Frame", tp.Any] = ...
-    _display_config: BetterDict = ...
-    _display_config_configured: BetterDict = ...
     _focused: bool = False
     _style: Style = ...
     _hover_style: Style = ...
@@ -120,28 +118,35 @@ class Frame(GeometryManager):
         self.__parent.theme.notify_on(ThemeManager.NotifyEvent.theme_reload, self.notify)
 
         # mutable defaults
-        display_config: DisplayConfig = {
-            "bg": ...,
-            "ulr": self.theme.frame.border_top_left_radius if "border_top_left_radius" in self.theme.frame else 0,
-            "urr": self.theme.frame.border_top_right_radius if "border_top_right_radius" in self.theme.frame else 0,
-            "llr": self.theme.frame.border_bottom_left_radius if "border_bottom_left_radius" in self.theme.frame else 0,
-            "lrr": self.theme.frame.border_bottom_right_radius if "border_bottom_right_radius" in self.theme.frame else 0,
-            "border_width": self.theme.frame.border_width if "border_width" in self.theme.frame else 0,
-            "border_color": self.theme.frame.border if "border" in self.theme.frame else Color.from_rgb(255, 0, 0),
-        }
+        self._style.backgroundColor = ...
 
-        display_config_configured: DisplayConfigConfigured = {
-            "bg": bg is not ...,
-            "ulr": border_radius is not ... or border_top_radius is not ... or border_top_left_radius is not ...,
-            "urr": border_radius is not ... or border_top_radius is not ... or border_top_right_radius is not ...,
-            "llr": border_radius is not ... or border_bottom_radius is not ... or border_bottom_left_radius is not ...,
-            "lrr": border_radius is not ... or border_bottom_radius is not ... or border_bottom_right_radius is not ...,
-            "border_width": border_width is not ...,
-            "border_color": border_color is not ...,
-        }
+        # load boarder radii from default theme
+        self._style.borderTopLeftRadius = 0
+        self._style.borderTopRightRadius = 0
+        self._style.borderBottomLeftRadius = 0
+        self._style.borderBottomRightRadius = 0
 
-        self._display_config = BetterDict(display_config)
-        self._display_config_configured = BetterDict(display_config_configured)
+        if "border_top_left_radius" in self.theme.frame:
+            self._style.borderTopLeftRadius = self.theme.frame.border_top_left_radius
+
+        if "border_top_right_radius" in self.theme.frame:
+            self._style.borderTopRightRadius = self.theme.frame.border_top_right_rasdius
+
+        if "border_bottom_left_radius" in self.theme.frame:
+            self._style.borderBottomLeftRadius = self.theme.frame.border_bottom_left_radius
+
+        if "border_bottom_right_radius" in self.theme.frame:
+            self._style.borderBottomRightRadius = self.theme.border_bottom_right_radius
+
+        # border config
+        self._style.borderWidth = 0
+        self._style.borderColor = Color.from_rgb(255, 0, 0)
+
+        if "border_width" in self.theme.frame:
+            self._style.borderWidth = self.theme.frame.border_width
+
+        if "border" in self.theme.frame:
+            self._style.borderColor = self.theme.frame.border
 
         if margin is ...:
             margin = self.theme.frame.margin if "margin" in self.theme.frame else 0
@@ -151,23 +156,25 @@ class Frame(GeometryManager):
 
         super().__init__(layout, margin, padding)
 
+        self._style.notify_on("margin", self.notify)
+        self._style.notify_on("padding", self.notify)
+
         # arguments
         if width is not ...:
-            self.width = width
+            self._style.width = width
 
         if height is not ...:
-            self.height = height
+            self._style.height = height
 
-        self._display_config["bg"] = self.theme.frame.bg1 if bg is ... else bg
-        if isinstance(self.__parent, Frame) and self.__parent._display_config["bg"] == self.theme.frame.bg1:
-            self._display_config["bg"] = self.theme.frame.bg2 if bg is ... else bg
-
-        print(f"set background: ", self._display_config.bg, bg)
+        self._style.backgroundColor = self.theme.frame.bg1 if bg is ... else bg
+        if isinstance(self.__parent, Frame) and \
+                self.__parent._style.backgroundColor == self.theme.frame.bg1:
+            self._style.backgroundColor = self.theme.frame.bg2 if bg is ... else bg
 
         if border_width is not ...:
-            self._display_config["border_width"] = border_width
+            self._style.borderWidth = border_width
 
-        self._display_config["border_color"] = self.theme.frame.border if border_color is ... else border_color
+        self._style.borderColor = self.theme.frame.border if border_color is ... else border_color
 
         # border radii
         if border_radius is ... and "border_radius" in self.theme.frame:
@@ -179,22 +186,40 @@ class Frame(GeometryManager):
         if border_top_radius is ... and "border_top_radius" in self.theme.frame:
             border_top_radius = self.theme.frame.border_top_radius
 
-        self._display_config["ulr"] = self._display_config["urr"] = border_radius
-        self._display_config["llr"] = self._display_config["lrr"] = border_radius
+        self._style.borderTopLeftRadius = border_radius
+        self._style.borderTopRightRadius = border_radius
+        self._style.borderBottomLeftRadius = border_radius
+        self._style.borderBottomRightRadius = border_radius
 
         if border_top_radius is not ...:
-            self._display_config["ulr"] = border_top_radius
-            self._display_config["urr"] = border_top_radius
+            self._style.borderTopLeftRadius = border_top_radius
+            self._style.borderTopRightRadius = border_top_radius
 
         if border_bottom_radius is not ...:
-            self._display_config["llr"] = border_bottom_radius
-            self._display_config["lrr"] = border_bottom_radius
+            self._style.borderBottomLeftRadius = border_bottom_radius
+            self._style.borderBottomRightRadius = border_bottom_radius
 
-        self._display_config.ulr = arg_or_default(border_top_left_radius, self._display_config.ulr, ...)
-        self._display_config.urr = arg_or_default(border_top_right_radius, self._display_config.urr, ...)
+        self._style.borderTopLeftRadius = arg_or_default(
+            border_top_left_radius,
+            self._style.borderTopLeftRadius,
+            ...
+        )
+        self._style.borderTopRightRadius = arg_or_default(
+            border_top_right_radius,
+            self._style.borderTopRightRadius,
+            ...
+        )
 
-        self._display_config.llr = arg_or_default(border_bottom_left_radius, self._display_config.llr, ...)
-        self._display_config.lrl = arg_or_default(border_bottom_right_radius, self._display_config.lrr, ...)
+        self._style.borderBottomLeftRadius = arg_or_default(
+            border_bottom_left_radius,
+            self._style.borderBottomLeftRadius,
+            ...
+        )
+        self._style.borderBottomRightRadius = arg_or_default(
+            border_bottom_right_radius,
+            self._style.borderBottomRightRadius,
+            ...
+        )
 
     @property
     def theme(self) -> ThemeManager:
@@ -253,34 +278,29 @@ class Frame(GeometryManager):
                     self._height = value
 
                 case "border_radius":
-                    self._display_config.ulr = value
-                    self._display_config.urr = value
-                    self._display_config.blr = value
-                    self._display_config.brr = value
+                    self._style.borderRadius = value
 
                 case "border_bottom_radius":
-                    self._display_config.blr = value
-                    self._display_config.brr = value
+                    self._style.borderBottomRadius = value
 
                 case "border_top_radius":
-                    self._display_config.ulr = value
-                    self._display_config.urr = value
+                    self._style.borderTopRadius = value
 
                 case _:
                     # check if in display config
                     new_key = display_configurify(key)
 
-                    if new_key in self._display_config:
-                        if isinstance(value, type(self._display_config[new_key])):
+                    if new_key in self._style:
+                        if isinstance(value, type(self._style[new_key])):
                             raise TypeError(
-                                f"Can't change \"{self._display_config[new_key]}\" to \"{value}\": "
+                                f"Can't change \"{self._style[new_key]}\" to \"{value}\": "
                                 f"invalid type!"
                             )
 
-                        self._display_config[key] = value
+                        self._style[key] = value
 
                     elif key in self.layout_params:
-                        if isinstance(value, type(self.layout_params[new_key])):
+                        if isinstance(value, type(self._style[new_key])):
                             raise TypeError(
                                 f"Can't change \"{self.layout_params[new_key]}\" to \"{value}\": "
                                 f"invalid type!"
@@ -289,25 +309,36 @@ class Frame(GeometryManager):
                         self.layout_params[key] = value
 
     # interfacing
-    def notify(self, event: ThemeManager.NotifyEvent) -> None:
+    def notify(
+            self,
+            event: ThemeManager.NotifyEvent | Style.NotifyEvent,
+            info: tp.Any = ...
+    ) -> None:
         """
         gets called by another class
         """
         match event:
             case ThemeManager.NotifyEvent.theme_reload:
+                print("theme changed")
                 # the theme has been reloaded
-                if not self._display_config_configured.bg:
-                    if isinstance(self.__parent, Frame) and self.__parent._display_config["bg"] == self.theme.frame.bg1:
-                        self._display_config.bg = self.theme.frame.bg2
+                # if not self._display_config_configured.bg:
+                #     if isinstance(self.__parent, Frame) and self.__parent._display_config["bg"] == self.theme.frame.bg1:
+                #         self._display_config.bg = self.theme.frame.bg2
+                #
+                #     else:
+                #         self._display_config.bg = self.theme.frame.bg1
+                #
+                # if not self._display_config_configured.border_color:
+                #     self._display_config.border_color = self.theme.frame.border
+                #
+                # if not self._display_config_configured.border_radius:
+                #     self._display_config.border_radius = self.theme.frame.border_radius
 
-                    else:
-                        self._display_config.bg = self.theme.frame.bg1
+            case Style.NotifyEvent.property_change:
+                print(f"style changed: {info}, new value: {self._style[info]}")
 
-                if not self._display_config_configured.border_color:
-                    self._display_config.border_color = self.theme.frame.border
-
-                if not self._display_config_configured.border_radius:
-                    self._display_config.border_radius = self.theme.frame.border_radius
+                if info in ("padding", "margin"):
+                    self.layout_params[info] = self._style[info]
 
     def get_size(self) -> tuple[int, int]:
         """
@@ -340,26 +371,27 @@ class Frame(GeometryManager):
 
         # draw the frame
         r_rect = pg.Rect((0, 0, width, height))
+
         pg.draw.rect(
             _surface,
-            self._display_config.bg.rgba,
+            self._style.backgroundColor.irgba,
             r_rect,
-            border_top_left_radius=self._display_config.ulr,
-            border_top_right_radius=self._display_config.urr,
-            border_bottom_left_radius=self._display_config.llr,
-            border_bottom_right_radius=self._display_config.lrr,
+            border_top_left_radius=self._style.borderTopLeftRadius,
+            border_top_right_radius=self._style.borderTopRightRadius,
+            border_bottom_left_radius=self._style.borderBottomLeftRadius,
+            border_bottom_right_radius=self._style.borderBottomRightRadius
         )
 
-        if self._display_config.border_width > 0:
+        if self._style.borderWidth > 0:
             pg.draw.rect(
                 _surface,
-                self._display_config.border_color.rgba,
+                self._style.borderColor.irgba,
                 r_rect,
-                width=self._display_config.border_width,
-                border_top_left_radius=self._display_config.ulr,
-                border_top_right_radius=self._display_config.urr,
-                border_bottom_left_radius=self._display_config.llr,
-                border_bottom_right_radius=self._display_config.lrr,
+                width=self._style.borderWidth,
+                border_top_left_radius=self._style.borderTopLeftRadius,
+                border_top_right_radius=self._style.borderTopRightRadius,
+                border_bottom_left_radius=self._style.borderBottomLeftRadius,
+                border_bottom_right_radius=self._style.borderBottomRightRadius
             )
 
         # draw children

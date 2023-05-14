@@ -9,13 +9,20 @@ Nilusink
 """
 from ._geo_types import Layout
 from ._color import Color
+from enum import Enum
 import typing as tp
+
+
+class NotifyEvent(Enum):
+    property_change = 0
 
 
 class Style:
     """
     What would a UI be without styles? Correct, a terminal!
     """
+    NotifyEvent = NotifyEvent
+
     width: int = ...
     height: int = ...
     minWidth: int = ...
@@ -29,8 +36,10 @@ class Style:
     padding: int = ...
 
     borderRadius: int = ...
-    borderBottom_radius: int = ...
+    borderBottomRadius: int = ...
     borderTopRadius: int = ...
+    borderLeftRadius: int = ...
+    borderRightRadius: int = ...
     borderBottomLeftRadius: int = ...
     borderBottomRightRadius: int = ...
     borderTopLeftRadius: int = ...
@@ -39,6 +48,8 @@ class Style:
     borderColor: Color = ...
 
     fontSize: int = ...
+
+    __notifiers: list[tuple[str, tp.Callable[[NotifyEvent, str], tp.Any]]]
 
     def __init__(
             self,
@@ -52,8 +63,10 @@ class Style:
             margin: int = ...,
             padding: int = ...,
             borderRadius: int = ...,
-            borderBottom_radius: int = ...,
+            borderBottomRadius: int = ...,
             borderTopRadius: int = ...,
+            borderLeftRadius: int = ...,
+            borderRightRadius: int = ...,
             borderBottomLeftRadius: int = ...,
             borderBottomRightRadius: int = ...,
             borderTopLeftRadius: int = ...,
@@ -65,6 +78,8 @@ class Style:
         """
         create a style element
         """
+        self.__notifiers = []
+
         self.width = width
         self.height = height
         self.minWidth = minWidth
@@ -75,8 +90,10 @@ class Style:
         self.margin = margin
         self.padding = padding
         self.borderRadius = borderRadius
-        self.borderBottom_radius = borderBottom_radius
+        self.borderBottomRadius = borderBottomRadius
         self.borderTopRadius = borderTopRadius
+        self.borderLeftRadius = borderLeftRadius
+        self.borderRightRadius = borderRightRadius
         self.borderBottomLeftRadius = borderBottomLeftRadius
         self.borderBottomRightRadius = borderBottomRightRadius
         self.borderTopLeftRadius = borderTopLeftRadius
@@ -136,6 +153,16 @@ class Style:
 
         return new_instance
 
+    def notify_on(
+            self,
+            variable: str,
+            callback: tp.Callable[[NotifyEvent, str], tp.Any]
+    ) -> None:
+        """
+        notify on variable change
+        """
+        self.__notifiers.append((variable, callback))
+
     # accessibility
     def __getitem__(self, item: str) -> tp.Any:
         if item in self.properties:
@@ -145,6 +172,46 @@ class Style:
 
     def __setitem__(self, key: str, value: tp.Any) -> None:
         if key in self.properties:
-            self.__dict__[key] = value
+            return self.__setattr__(key, value)
 
         raise KeyError(f"Can't find item \"{key}\" in Style.")
+
+    def __contains__(self, key: str) -> bool:
+        return key in self.__dict__
+
+    def __setattr__(self, key: str, value: tp.Any) -> None:
+        # border shorthands
+        if key == "borderRadius":
+            self.__setattr__("borderTopLeftRadius", value)
+            self.__setattr__("borderTopRightRadius", value)
+            self.__setattr__("borderBottomLeftRadius", value)
+            self.__setattr__("borderBottomRightRadius", value)
+            return
+
+        elif key == "borderTopRadius":
+            self.__setattr__("borderTopLeftRadius", value)
+            self.__setattr__("borderTopRightRadius", value)
+            return
+
+        elif key == "borderBottomRadius":
+            self.__setattr__("borderBottomLeftRadius", value)
+            self.__setattr__("borderBottomRightRadius", value)
+            return
+
+        elif key == "borderLeftRadius":
+            self.__setattr__("borderTopLeftRadius", value)
+            self.__setattr__("borderBottomLeftRadius", value)
+            return
+
+        elif key == "borderRightRadius":
+            self.__setattr__("borderTopRightRadius", value)
+            self.__setattr__("borderBottomRightRadius", value)
+            return
+
+        if not key.endswith("__notifiers"):
+            for n_key, callback in self.__notifiers:
+                if n_key.lower() == key.lower():
+                    callback(NotifyEvent.property_change, n_key)
+
+        # change regardless of notification
+        self.__dict__[key] = value
