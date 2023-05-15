@@ -9,11 +9,16 @@ Nilusink
 """
 from .widgets import GeometryManager
 from .theme import ThemeManager
+from .utils import point_in_box
 from copy import deepcopy
 from .types import *
 import typing as tp
 import pygame as pg
 import os.path
+
+# for type hints
+if tp.TYPE_CHECKING:
+    from .widgets import Frame
 
 
 DEFAULT_TITLE: str = "Window"
@@ -28,6 +33,7 @@ class PgRoot(GeometryManager):
     layout_params: BetterDict = ...
     _min_size: tuple[int, int] = ...
     _bg_configured: bool = False
+    _mouse_pos: tuple[int, int] = ...
 
     def __init__(
             self,
@@ -80,6 +86,10 @@ class PgRoot(GeometryManager):
     def theme(self) -> ThemeManager:
         return self._theme
 
+    @property
+    def mouse_pos(self) -> tuple[int, int]:
+        return self._mouse_pos
+
     def get_focus(self) -> GeometryManager | None:
         """
         get the currently focused item
@@ -104,7 +114,7 @@ class PgRoot(GeometryManager):
             self.set_focus(widget)
 
     # interfacing
-    def notify(self, event: ThemeManager.NotifyEvent) -> None:
+    def notify(self, event: ThemeManager.NotifyEvent, _info = ...) -> None:
         """
         gets called by another class
         """
@@ -133,6 +143,10 @@ class PgRoot(GeometryManager):
                 #     height = max([height, self._min_size[1]])
                 #
                 #     # self.__background = pg.display.set_mode((width, height), flags=pg.RESIZABLE | pg.HWSURFACE | pg.DOUBLEBUF)
+
+        self._mouse_pos = pg.mouse.get_pos()
+
+        self._notify_child_active_hover(self.mouse_pos)
 
     def update_screen(self) -> None:
         """

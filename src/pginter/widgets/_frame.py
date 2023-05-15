@@ -60,9 +60,9 @@ class Frame(GeometryManager):
     """
     __parent: tp.Union["Frame", tp.Any] = ...
     _focused: bool = False
-    _style: Style = ...
-    _hover_style: Style = ...
-    _active_style: Style = ...
+    style: Style = ...
+    hover_style: Style = ...
+    active_style: Style = ...
     _x: int = -1
     _y: int = -1
 
@@ -102,9 +102,9 @@ class Frame(GeometryManager):
         :param border_width: how thick the border of the box should be
         :param border_color: the color of the border
         """
-        self._style = style if style is not ... else Style()
-        self._active_style = active_style if active_style is not ... else Style()
-        self._hover_style = hover_style if hover_style is not ... else Style()
+        self.style = style if style is not ... else Style()
+        self.active_style = active_style if active_style is not ... else Style()
+        self.hover_style = hover_style if hover_style is not ... else Style()
 
         # TODO: implement styles
         if min_width is not ...:
@@ -118,35 +118,35 @@ class Frame(GeometryManager):
         self.__parent.theme.notify_on(ThemeManager.NotifyEvent.theme_reload, self.notify)
 
         # mutable defaults
-        self._style.backgroundColor = ...
+        self.style.backgroundColor = ...
 
         # load boarder radii from default theme
-        self._style.borderTopLeftRadius = 0
-        self._style.borderTopRightRadius = 0
-        self._style.borderBottomLeftRadius = 0
-        self._style.borderBottomRightRadius = 0
+        self.style.borderTopLeftRadius = 0
+        self.style.borderTopRightRadius = 0
+        self.style.borderBottomLeftRadius = 0
+        self.style.borderBottomRightRadius = 0
 
         if "border_top_left_radius" in self.theme.frame:
-            self._style.borderTopLeftRadius = self.theme.frame.border_top_left_radius
+            self.style.borderTopLeftRadius = self.theme.frame.border_top_left_radius
 
         if "border_top_right_radius" in self.theme.frame:
-            self._style.borderTopRightRadius = self.theme.frame.border_top_right_rasdius
+            self.style.borderTopRightRadius = self.theme.frame.border_top_right_rasdius
 
         if "border_bottom_left_radius" in self.theme.frame:
-            self._style.borderBottomLeftRadius = self.theme.frame.border_bottom_left_radius
+            self.style.borderBottomLeftRadius = self.theme.frame.border_bottom_left_radius
 
         if "border_bottom_right_radius" in self.theme.frame:
-            self._style.borderBottomRightRadius = self.theme.border_bottom_right_radius
+            self.style.borderBottomRightRadius = self.theme.border_bottom_right_radius
 
         # border config
-        self._style.borderWidth = 0
-        self._style.borderColor = Color.from_rgb(255, 0, 0)
+        self.style.borderWidth = 0
+        self.style.borderColor = Color.from_rgb(255, 0, 0)
 
         if "border_width" in self.theme.frame:
-            self._style.borderWidth = self.theme.frame.border_width
+            self.style.borderWidth = self.theme.frame.border_width
 
         if "border" in self.theme.frame:
-            self._style.borderColor = self.theme.frame.border
+            self.style.borderColor = self.theme.frame.border
 
         if margin is ...:
             margin = self.theme.frame.margin if "margin" in self.theme.frame else 0
@@ -156,25 +156,25 @@ class Frame(GeometryManager):
 
         super().__init__(layout, margin, padding)
 
-        self._style.notify_on("margin", self.notify)
-        self._style.notify_on("padding", self.notify)
+        self.style.notify_on("margin", self.notify)
+        self.style.notify_on("padding", self.notify)
 
         # arguments
         if width is not ...:
-            self._style.width = width
+            self.style.width = width
 
         if height is not ...:
-            self._style.height = height
+            self.style.height = height
 
-        self._style.backgroundColor = self.theme.frame.bg1 if bg is ... else bg
+        self.style.backgroundColor = self.theme.frame.bg1 if bg is ... else bg
         if isinstance(self.__parent, Frame) and \
-                self.__parent._style.backgroundColor == self.theme.frame.bg1:
-            self._style.backgroundColor = self.theme.frame.bg2 if bg is ... else bg
+                self.__parent.style.backgroundColor == self.theme.frame.bg1:
+            self.style.backgroundColor = self.theme.frame.bg2 if bg is ... else bg
 
         if border_width is not ...:
-            self._style.borderWidth = border_width
+            self.style.borderWidth = border_width
 
-        self._style.borderColor = self.theme.frame.border if border_color is ... else border_color
+        self.style.borderColor = self.theme.frame.border if border_color is ... else border_color
 
         # border radii
         if border_radius is ... and "border_radius" in self.theme.frame:
@@ -186,38 +186,38 @@ class Frame(GeometryManager):
         if border_top_radius is ... and "border_top_radius" in self.theme.frame:
             border_top_radius = self.theme.frame.border_top_radius
 
-        self._style.borderTopLeftRadius = border_radius
-        self._style.borderTopRightRadius = border_radius
-        self._style.borderBottomLeftRadius = border_radius
-        self._style.borderBottomRightRadius = border_radius
+        self.style.borderTopLeftRadius = border_radius
+        self.style.borderTopRightRadius = border_radius
+        self.style.borderBottomLeftRadius = border_radius
+        self.style.borderBottomRightRadius = border_radius
 
         if border_top_radius is not ...:
-            self._style.borderTopLeftRadius = border_top_radius
-            self._style.borderTopRightRadius = border_top_radius
+            self.style.borderTopLeftRadius = border_top_radius
+            self.style.borderTopRightRadius = border_top_radius
 
         if border_bottom_radius is not ...:
-            self._style.borderBottomLeftRadius = border_bottom_radius
-            self._style.borderBottomRightRadius = border_bottom_radius
+            self.style.borderBottomLeftRadius = border_bottom_radius
+            self.style.borderBottomRightRadius = border_bottom_radius
 
-        self._style.borderTopLeftRadius = arg_or_default(
+        self.style.borderTopLeftRadius = arg_or_default(
             border_top_left_radius,
-            self._style.borderTopLeftRadius,
+            self.style.borderTopLeftRadius,
             ...
         )
-        self._style.borderTopRightRadius = arg_or_default(
+        self.style.borderTopRightRadius = arg_or_default(
             border_top_right_radius,
-            self._style.borderTopRightRadius,
+            self.style.borderTopRightRadius,
             ...
         )
 
-        self._style.borderBottomLeftRadius = arg_or_default(
+        self.style.borderBottomLeftRadius = arg_or_default(
             border_bottom_left_radius,
-            self._style.borderBottomLeftRadius,
+            self.style.borderBottomLeftRadius,
             ...
         )
-        self._style.borderBottomRightRadius = arg_or_default(
+        self.style.borderBottomRightRadius = arg_or_default(
             border_bottom_right_radius,
-            self._style.borderBottomRightRadius,
+            self.style.borderBottomRightRadius,
             ...
         )
 
@@ -278,29 +278,29 @@ class Frame(GeometryManager):
                     self._height = value
 
                 case "border_radius":
-                    self._style.borderRadius = value
+                    self.style.borderRadius = value
 
                 case "border_bottom_radius":
-                    self._style.borderBottomRadius = value
+                    self.style.borderBottomRadius = value
 
                 case "border_top_radius":
-                    self._style.borderTopRadius = value
+                    self.style.borderTopRadius = value
 
                 case _:
                     # check if in display config
                     new_key = display_configurify(key)
 
-                    if new_key in self._style:
-                        if isinstance(value, type(self._style[new_key])):
+                    if new_key in self.style:
+                        if isinstance(value, type(self.style[new_key])):
                             raise TypeError(
-                                f"Can't change \"{self._style[new_key]}\" to \"{value}\": "
+                                f"Can't change \"{self.style[new_key]}\" to \"{value}\": "
                                 f"invalid type!"
                             )
 
-                        self._style[key] = value
+                        self.style[key] = value
 
                     elif key in self.layout_params:
-                        if isinstance(value, type(self._style[new_key])):
+                        if isinstance(value, type(self.style[new_key])):
                             raise TypeError(
                                 f"Can't change \"{self.layout_params[new_key]}\" to \"{value}\": "
                                 f"invalid type!"
@@ -335,10 +335,13 @@ class Frame(GeometryManager):
                 #     self._display_config.border_radius = self.theme.frame.border_radius
 
             case Style.NotifyEvent.property_change:
-                print(f"style changed: {info}, new value: {self._style[info]}")
+                print(f"style changed: {info}, new value: {self.style[info]}")
 
                 if info in ("padding", "margin"):
-                    self.layout_params[info] = self._style[info]
+                    self.layout_params[info] = self.style[info]
+
+            case _:
+                super().notify(event, info)
 
     def get_size(self) -> tuple[int, int]:
         """
@@ -356,10 +359,23 @@ class Frame(GeometryManager):
 
         return width.__floor__(), height.__floor__()
 
+    def get_position(self) -> tuple[int, int]:
+        return self._x, self._y
+
     def draw(self, surface: pg.Surface) -> None:
         """
         draw the frame
         """
+        current_style = self.style
+
+        if self._is_hover:
+            current_style = self.style.overwrite(self.hover_style)
+
+        if self._is_active:
+            current_style = self.style.overwrite(self.hover_style).overwrite(
+                self.active_style
+            )
+
         width, height = self.get_size()
 
         # print(f"frame size: {width, height=}, "
@@ -374,24 +390,24 @@ class Frame(GeometryManager):
 
         pg.draw.rect(
             _surface,
-            self._style.backgroundColor.irgba,
+            current_style.backgroundColor.irgba,
             r_rect,
-            border_top_left_radius=self._style.borderTopLeftRadius,
-            border_top_right_radius=self._style.borderTopRightRadius,
-            border_bottom_left_radius=self._style.borderBottomLeftRadius,
-            border_bottom_right_radius=self._style.borderBottomRightRadius
+            border_top_left_radius=current_style.borderTopLeftRadius,
+            border_top_right_radius=current_style.borderTopRightRadius,
+            border_bottom_left_radius=current_style.borderBottomLeftRadius,
+            border_bottom_right_radius=current_style.borderBottomRightRadius
         )
 
-        if self._style.borderWidth > 0:
+        if current_style.borderWidth > 0:
             pg.draw.rect(
                 _surface,
-                self._style.borderColor.irgba,
+                current_style.borderColor.irgba,
                 r_rect,
-                width=self._style.borderWidth,
-                border_top_left_radius=self._style.borderTopLeftRadius,
-                border_top_right_radius=self._style.borderTopRightRadius,
-                border_bottom_left_radius=self._style.borderBottomLeftRadius,
-                border_bottom_right_radius=self._style.borderBottomRightRadius
+                width=current_style.borderWidth,
+                border_top_left_radius=current_style.borderTopLeftRadius,
+                border_top_right_radius=current_style.borderTopRightRadius,
+                border_bottom_left_radius=current_style.borderBottomLeftRadius,
+                border_bottom_right_radius=current_style.borderBottomRightRadius
             )
 
         # draw children

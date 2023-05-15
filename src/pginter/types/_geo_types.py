@@ -14,3 +14,9 @@ class Layout(Enum):
     Absolute = "absolute"
     Pack = "pack"
     Grid = "grid"
+
+
+class GeoNotes(Enum):
+    SetNormal = 0
+    SetHover = 1
+    SetActive = 2

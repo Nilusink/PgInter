@@ -13,7 +13,7 @@ from enum import Enum
 import typing as tp
 
 
-class NotifyEvent(Enum):
+class _NotifyEvent(Enum):
     property_change = 0
 
 
@@ -21,7 +21,7 @@ class Style:
     """
     What would a UI be without styles? Correct, a terminal!
     """
-    NotifyEvent = NotifyEvent
+    NotifyEvent = _NotifyEvent
 
     width: int = ...
     height: int = ...

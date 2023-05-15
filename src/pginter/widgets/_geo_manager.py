@@ -7,10 +7,16 @@ How children are placed
 Author:
 Nilusink
 """
-from ..types import Layout, BetterDict, TOP, BOTTOM, LEFT, RIGHT
+from ..types import Layout, BetterDict, TOP, BOTTOM, LEFT, RIGHT, GeoNotes
 from ._supports_children import SupportsChildren
+from ..utils import point_in_box
 from copy import deepcopy
 import typing as tp
+import pygame as pg
+
+
+if tp.TYPE_CHECKING:
+    from ._frame import Frame
 
 
 class GeometryManager(SupportsChildren):
@@ -27,6 +33,9 @@ class GeometryManager(SupportsChildren):
     _child_params: list[tuple[tp.Any, BetterDict]] = ...
     layout_params: BetterDict = ...
     _grid_params: BetterDict = ...
+
+    _is_active: bool = False
+    _is_hover: bool = False
 
     def __init__(
             self,
@@ -82,6 +91,53 @@ class GeometryManager(SupportsChildren):
         """
         remove focus from this item
         """
+
+    def _notify_child_active_hover(self, mouse_pos: tuple[int, int]) -> bool:
+        has_hit: bool = False
+
+        for child in self._children:
+            child: Frame
+
+            pos = child.get_position()
+            size = child.get_size()
+
+            if point_in_box(mouse_pos, (*pos, *size)):
+                has_hit = True
+                child.notify(
+                    GeoNotes.SetActive if pg.mouse.get_pressed(3)[0]
+                    else GeoNotes.SetHover,
+                    (mouse_pos[0] - pos[0], mouse_pos[1] - pos[1])
+                )
+                continue
+
+            child.notify(GeoNotes.SetNormal)
+
+        return has_hit
+
+    def notify(self, event, info) -> None:
+        """
+        for notifications from child / parent classes
+        """
+        match event:
+            case GeoNotes.SetHover:
+                if self._notify_child_active_hover(info):
+                    self._is_hover = False
+                    self._is_active = False
+                else:
+                    self._is_hover = True
+                    self._is_active = False
+
+            case GeoNotes.SetActive:
+                if self._notify_child_active_hover(info):
+                    self._is_hover = False
+                    self._is_active = False
+                else:
+                    self._is_hover = False
+                    self._is_active = True
+
+            case GeoNotes.SetNormal:
+                self._is_hover = False
+                self._is_active = False
 
     # layout configuration
     def set_layout(self, layout: Layout) -> None:
