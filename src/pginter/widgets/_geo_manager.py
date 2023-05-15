@@ -34,6 +34,7 @@ class GeometryManager(SupportsChildren):
     layout_params: BetterDict = ...
     _grid_params: BetterDict = ...
 
+    _child_override: bool = False
     _is_active: bool = False
     _is_hover: bool = False
 
@@ -71,7 +72,12 @@ class GeometryManager(SupportsChildren):
     def width(self, value: float) -> None:
         self._width = value
         self._width_configured = True
-        print("width set to ", value)
+
+    def unset_width(self) -> None:
+        """
+        act as if the width has never been set
+        """
+        self._width_configured = False
 
     @property
     def height(self) -> float:
@@ -82,6 +88,20 @@ class GeometryManager(SupportsChildren):
         self._height = value
         self._height_configured = True
 
+    def unset_height(self) -> None:
+        """
+        act as if the height has never been set
+        """
+        self._height_configured = False
+
+    @property
+    def is_hover(self) -> bool:
+        return self._is_hover
+
+    @property
+    def is_active(self) -> bool:
+        return self._is_active
+
     def set_focus(self, widget: "GeometryManager"):
         """
         set this item as currently focused
@@ -91,6 +111,36 @@ class GeometryManager(SupportsChildren):
         """
         remove focus from this item
         """
+
+    def set_active(self, override: bool = False) -> None:
+        """
+        change the widget to an active state
+        """
+        if not self._child_override:
+            self._is_hover = False
+            self._is_active = True
+
+        self._child_override = self._child_override or override
+
+    def set_hover(self, override: bool = False) -> None:
+        """
+        set the widget to a hover state
+        """
+        if not self._child_override:
+            self._is_hover = True
+            self._is_active = False
+
+        self._child_override = self._child_override or override
+
+    def set_no_hover_active(self, override: bool = False) -> None:
+        """
+        set the widget to "normal" mode
+        """
+        if not self._child_override:
+            self._is_hover = False
+            self._is_active = False
+
+        self._child_override = self._child_override or override
 
     def _notify_child_active_hover(self, mouse_pos: tuple[int, int]) -> bool:
         has_hit: bool = False
@@ -118,26 +168,22 @@ class GeometryManager(SupportsChildren):
         """
         for notifications from child / parent classes
         """
+        self._child_override = False
         match event:
             case GeoNotes.SetHover:
                 if self._notify_child_active_hover(info):
-                    self._is_hover = False
-                    self._is_active = False
+                    self.set_no_hover_active()
                 else:
-                    self._is_hover = True
-                    self._is_active = False
+                    self.set_hover()
 
             case GeoNotes.SetActive:
                 if self._notify_child_active_hover(info):
-                    self._is_hover = False
-                    self._is_active = False
+                    self.set_no_hover_active()
                 else:
-                    self._is_hover = False
-                    self._is_active = True
+                    self.set_active()
 
             case GeoNotes.SetNormal:
-                self._is_hover = False
-                self._is_active = False
+                self.set_no_hover_active()
 
     # layout configuration
     def set_layout(self, layout: Layout) -> None:

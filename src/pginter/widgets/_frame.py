@@ -117,36 +117,50 @@ class Frame(GeometryManager):
 
         self.__parent.theme.notify_on(ThemeManager.NotifyEvent.theme_reload, self.notify)
 
-        # mutable defaults
-        self.style.backgroundColor = ...
-
-        # load boarder radii from default theme
-        self.style.borderTopLeftRadius = 0
-        self.style.borderTopRightRadius = 0
-        self.style.borderBottomLeftRadius = 0
-        self.style.borderBottomRightRadius = 0
-
-        if "border_top_left_radius" in self.theme.frame:
+        if all([
+            "border_top_left_radius" in self.theme.frame,
+            self.style.borderTopLeftRadius is ...
+        ]):
             self.style.borderTopLeftRadius = self.theme.frame.border_top_left_radius
+            if border_top_left_radius is not ...:
+                self.style.borderTopLeftRadius = border_top_left_radius
 
-        if "border_top_right_radius" in self.theme.frame:
+        if all([
+            "border_top_right_radius" in self.theme.frame,
+            self.style.borderTopRightRadius is ...
+        ]):
             self.style.borderTopRightRadius = self.theme.frame.border_top_right_rasdius
+            if border_top_right_radius is not ...:
+                self.style.borderTopRightRadius = border_top_right_radius
 
-        if "border_bottom_left_radius" in self.theme.frame:
+        if all([
+            "border_bottom_left_radius" in self.theme.frame,
+            self.style.borderBottomLeftRadius is ...
+        ]):
             self.style.borderBottomLeftRadius = self.theme.frame.border_bottom_left_radius
+            if border_bottom_left_radius is not ...:
+                self.style.borderBottomLeftRadius = border_bottom_left_radius
 
-        if "border_bottom_right_radius" in self.theme.frame:
+        if all([
+            "border_bottom_right_radius" in self.theme.frame,
+            self.style.borderBottomRightRadius is ...
+        ]):
             self.style.borderBottomRightRadius = self.theme.border_bottom_right_radius
+            if border_bottom_right_radius is not ...:
+                self.style.borderBottomRightRadius = border_bottom_right_radius
 
         # border config
-        self.style.borderWidth = 0
-        self.style.borderColor = Color.from_rgb(255, 0, 0)
+        if self.style.borderWidth is ...:
+            self.style.borderWidth = 0
 
-        if "border_width" in self.theme.frame:
-            self.style.borderWidth = self.theme.frame.border_width
+            if "border_width" in self.theme.frame:
+                self.style.borderWidth = self.theme.frame.border_width
 
-        if "border" in self.theme.frame:
-            self.style.borderColor = self.theme.frame.border
+        if self.style.borderColor is ...:
+            self.style.borderColor = Color.from_rgb(255, 0, 0)
+
+            if "border" in self.theme.frame:
+                self.style.borderColor = self.theme.frame.border
 
         if margin is ...:
             margin = self.theme.frame.margin if "margin" in self.theme.frame else 0
@@ -154,27 +168,35 @@ class Frame(GeometryManager):
         if padding is ...:
             padding = self.theme.frame.padding if "padding" in self.theme.frame else 0
 
-        super().__init__(layout, margin, padding)
+        if self.style.margin is ...:
+            self.style.margin = margin
+
+        if self.style.padding is ...:
+            self.style.padding = padding
+
+        super().__init__(layout, self.style.margin, self.style.padding)
 
         self.style.notify_on("margin", self.notify)
         self.style.notify_on("padding", self.notify)
 
         # arguments
-        if width is not ...:
+        if width is not ... and self.style.width is ...:
             self.style.width = width
 
-        if height is not ...:
+        if height is not ... and self.style.height is ...:
             self.style.height = height
 
-        self.style.backgroundColor = self.theme.frame.bg1 if bg is ... else bg
-        if isinstance(self.__parent, Frame) and \
-                self.__parent.style.backgroundColor == self.theme.frame.bg1:
-            self.style.backgroundColor = self.theme.frame.bg2 if bg is ... else bg
+        if self.style.backgroundColor is ...:
+            self.style.backgroundColor = self.theme.frame.bg1 if bg is ... else bg
+            if isinstance(self.__parent, Frame) and \
+                    self.__parent.style.backgroundColor == self.theme.frame.bg1:
+                self.style.backgroundColor = self.theme.frame.bg2 if bg is ... else bg
 
-        if border_width is not ...:
+        if border_width is not ... and self.style.borderWidth is ...:
             self.style.borderWidth = border_width
 
-        self.style.borderColor = self.theme.frame.border if border_color is ... else border_color
+        if self.style.borderColor is ...:
+            self.style.borderColor = self.theme.frame.border if border_color is ... else border_color
 
         # border radii
         if border_radius is ... and "border_radius" in self.theme.frame:
@@ -186,40 +208,31 @@ class Frame(GeometryManager):
         if border_top_radius is ... and "border_top_radius" in self.theme.frame:
             border_top_radius = self.theme.frame.border_top_radius
 
-        self.style.borderTopLeftRadius = border_radius
-        self.style.borderTopRightRadius = border_radius
-        self.style.borderBottomLeftRadius = border_radius
-        self.style.borderBottomRightRadius = border_radius
+        if self.style.borderTopLeftRadius is ...:
+            self.style.borderTopLeftRadius = border_radius
+
+        if self.style.borderTopRightRadius is ...:
+            self.style.borderTopRightRadius = border_radius
+
+        if self.style.borderBottomLeftRadius is ...:
+            self.style.borderBottomLeftRadius = border_radius
+
+        if self.style.borderBottomRightRadius is ...:
+            self.style.borderBottomRightRadius = border_radius
 
         if border_top_radius is not ...:
-            self.style.borderTopLeftRadius = border_top_radius
-            self.style.borderTopRightRadius = border_top_radius
+            if self.style.borderTopLeftRadius is ...:
+                self.style.borderTopLeftRadius = border_top_radius
+
+            if self.style.borderTopRightRadius is ...:
+                self.style.borderTopRightRadius = border_top_radius
 
         if border_bottom_radius is not ...:
-            self.style.borderBottomLeftRadius = border_bottom_radius
-            self.style.borderBottomRightRadius = border_bottom_radius
+            if self.style.borderBottomLeftRadius is ...:
+                self.style.borderBottomLeftRadius = border_bottom_radius
 
-        self.style.borderTopLeftRadius = arg_or_default(
-            border_top_left_radius,
-            self.style.borderTopLeftRadius,
-            ...
-        )
-        self.style.borderTopRightRadius = arg_or_default(
-            border_top_right_radius,
-            self.style.borderTopRightRadius,
-            ...
-        )
-
-        self.style.borderBottomLeftRadius = arg_or_default(
-            border_bottom_left_radius,
-            self.style.borderBottomLeftRadius,
-            ...
-        )
-        self.style.borderBottomRightRadius = arg_or_default(
-            border_bottom_right_radius,
-            self.style.borderBottomRightRadius,
-            ...
-        )
+            if self.style.borderBottomRightRadius is ...:
+                self.style.borderBottomRightRadius = border_bottom_radius
 
     @property
     def theme(self) -> ThemeManager:
@@ -368,13 +381,28 @@ class Frame(GeometryManager):
         """
         current_style = self.style
 
-        if self._is_hover:
+        if self.is_hover:
             current_style = self.style.overwrite(self.hover_style)
 
-        if self._is_active:
+        if self.is_active:
             current_style = self.style.overwrite(self.hover_style).overwrite(
                 self.active_style
             )
+
+        self.layout_params.padding = current_style.padding
+        self.layout_params.margin = current_style.margin
+
+        if current_style.height is not ...:
+            self.height = current_style.height
+
+        else:
+            self.unset_height()
+
+        if current_style.width is not ...:
+            self.width = current_style.width
+
+        else:
+            self.unset_width()
 
         width, height = self.get_size()
 

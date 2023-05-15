@@ -9,7 +9,6 @@ Nilusink
 """
 from .widgets import GeometryManager
 from .theme import ThemeManager
-from .utils import point_in_box
 from copy import deepcopy
 from .types import *
 import typing as tp
@@ -34,6 +33,7 @@ class PgRoot(GeometryManager):
     _min_size: tuple[int, int] = ...
     _bg_configured: bool = False
     _mouse_pos: tuple[int, int] = ...
+    _max_framerate: int = ...
 
     def __init__(
             self,
@@ -43,7 +43,10 @@ class PgRoot(GeometryManager):
             bg_color: Color = ...,
             padding: int = 0,
             margin: int = 0,
+            max_framerate: int = 30
     ):
+        self._max_framerate = max_framerate
+
         super().__init__()
         self._theme = ThemeManager()
         self._theme.notify_on(ThemeManager.NotifyEvent.theme_reload, self.notify)
@@ -61,6 +64,7 @@ class PgRoot(GeometryManager):
         # pg init
         pg.init()
         pg.font.init()
+        self._clk = pg.time.Clock()
 
         if size is not ...:
             self.__background = pg.display.set_mode(size, flags=pg.RESIZABLE)
@@ -114,7 +118,7 @@ class PgRoot(GeometryManager):
             self.set_focus(widget)
 
     # interfacing
-    def notify(self, event: ThemeManager.NotifyEvent, _info = ...) -> None:
+    def notify(self, event: ThemeManager.NotifyEvent, _info=...) -> None:
         """
         gets called by another class
         """
@@ -173,6 +177,8 @@ class PgRoot(GeometryManager):
         while self._running:
             self.update()
             self.update_screen()
+
+            self._clk.tick(self._max_framerate)
 
     def calculate_geometry(self):
         """

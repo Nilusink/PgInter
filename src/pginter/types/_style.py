@@ -128,7 +128,7 @@ class Style:
         """
         out = []
         for prop in self.__dict__:
-            if prop.startswith("__") or prop.endswith("__"):
+            if prop.startswith("_") or prop.endswith("_"):
                 continue
 
             if hasattr(self, prop):
@@ -211,7 +211,14 @@ class Style:
         if not key.endswith("__notifiers"):
             for n_key, callback in self.__notifiers:
                 if n_key.lower() == key.lower():
-                    callback(NotifyEvent.property_change, n_key)
+                    callback(_NotifyEvent.property_change, n_key)
 
         # change regardless of notification
         self.__dict__[key] = value
+
+    def __repr__(self) -> str:
+        out = f"{super().__repr__()}: ""{\n"
+        for prop in self.properties:
+            out += f"\t{prop}: {self[prop]},\n"
+
+        return out + "}\n"

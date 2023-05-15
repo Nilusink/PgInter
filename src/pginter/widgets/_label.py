@@ -7,24 +7,19 @@ A thing to display text
 Author:
 Nilusink
 """
-from ..types import Color, BetterDict, Layout
+from ..types import Color, Layout, Style, Variable, StringVar, GeoNotes
 from ..utils import arg_or_default
+from ..theme import ThemeManager
 from ._frame import Frame
 import pygame as pg
 import typing as tp
-
-
-class LabelConfig(tp.TypedDict):
-    font_size: int
-    text: str
-    fg: str
 
 
 class Label(Frame):
     """
     A thing to display text
     """
-    _config: BetterDict = ...
+    _text_var: Variable = ...
 
     def __init__(
             self,
@@ -33,33 +28,44 @@ class Label(Frame):
             font_size: int = ...,
             bg: Color = ...,
             fg: Color = ...,
+            textvariable: Variable = ...,
             **args
     ) -> None:
         """
 
         """
+        self._text_var = arg_or_default(
+            textvariable,
+            StringVar(value=arg_or_default(text, "Button", ...)),
+            ...
+        )
+
         # remove configured arguments
         if "layout" in args:
             args.pop("layout")
 
+        style = Style(
+            color=arg_or_default(fg, parent.theme.label.fg),
+            backgroundColor=arg_or_default(bg, parent.theme.label.bg),
+            fontSize=arg_or_default(font_size, parent.theme.label.font_size)
+        )
+
+        # if style option exists, overwrite the default one
+        if "style" in args:
+            style = style.overwrite(args["style"])
+
+        args.pop("style")
+
         # initialize parent class
         super().__init__(
             parent=parent,
-            bg=arg_or_default(bg, parent.theme.label.bg),
             layout=Layout.Grid,
+            style=style,
             **args
         )
 
-        # arguments
-        config: LabelConfig = {
-            "font_size": arg_or_default(font_size, self.theme.label.font_size),
-            "text": text,
-            "fg": arg_or_default(fg, self.theme.label.fg)
-        }
-
-        self._config = BetterDict(config)
-
-        self._font = pg.font.SysFont(None, self._config.font_size)
+        # initialize font
+        self._font = pg.font.SysFont(None, self.style.fontSize)
 
     def draw(self, surface: pg.Surface) -> None:
         """
@@ -67,9 +73,9 @@ class Label(Frame):
         """
         # get text
         r_text = self._font.render(
-            self._config.text,
+            self._text_var.get(),
             True,
-            self._config.fg.rgba
+            self.style.color.irgba
         )
 
         width, height = r_text.get_size()
@@ -104,3 +110,17 @@ class Label(Frame):
         )
 
         surface.blit(r_text, pos)
+
+    def notify(
+            self, event: ThemeManager.NotifyEvent | Style.NotifyEvent,
+            info: tp.Any = ...
+    ) -> None:
+        """
+        for notifications from child / parent classes
+        """
+        match event:
+            case GeoNotes.SetHover:
+                self.parent.set_hover(True)
+
+            case GeoNotes.SetActive:
+                self.parent.set_active(True)
