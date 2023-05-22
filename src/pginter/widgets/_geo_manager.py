@@ -521,7 +521,6 @@ class GeometryManager(SupportsChildren):
                     if not child._width_configured:
                         if "w" in sticky:
                             size[0] += (x_diff / 2) - params.margin
-                            box_x = x + params.margin
 
                         if "e" in sticky:
                             size[0] += (x_diff / 2) - params.margin
@@ -531,8 +530,6 @@ class GeometryManager(SupportsChildren):
                     if not child._height_configured:
                         if "n" in sticky:
                             size[1] += (y_diff / 2) - params.margin
-                            box_y = y + params.margin
-                            # print("north: ", size, box_x, box_y, "\t\t", width, height)
 
                         if "s" in sticky:
                             size[1] += (y_diff / 2) - params.margin

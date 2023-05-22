@@ -7,6 +7,7 @@ implements tkinter variables like StrVar and IntVar
 Author:
 Nilusink
 """
+from copy import copy, deepcopy
 from enum import Enum
 import typing as tp
 
@@ -27,6 +28,7 @@ class Variable:
     _master = ...
     _value: _T = ...
     _name: str = ...
+    _deepcopy: bool = False
 
     _traces: list[tuple[
         _TraceModes | list[_TraceModes],
@@ -35,15 +37,17 @@ class Variable:
 
     def __init__(
             self,
-            master = None,
+            master=None,
             value: _T = None,
-            name: str = None
+            name: str = None,
+            use_deepcopy: bool = False
     ) -> None:
         self._traces = []
 
         self._master = master
         self._value = value
         self._name: str = name
+        self._deepcopy = use_deepcopy
 
     def _check_send(self, mode: _TraceModes) -> None:
         """
@@ -65,7 +69,7 @@ class Variable:
         get the variable
         """
         self._check_send(_TraceModes.read)
-        return self._value
+        return deepcopy(self._value) if self._deepcopy else copy(self._value)
 
     def set(self, value: _T) -> None:
         """
@@ -84,6 +88,9 @@ class Variable:
         """
         create a trace
         """
+        if mode == _TraceModes.array:
+            raise RuntimeWarning("mode \"array\" is currently not implemented")
+
         self._traces.append((mode, callback_name))
 
     def trace_remove(
@@ -116,7 +123,7 @@ class Variable:
 class StringVar(Variable):
     def __init__(
             self,
-            master = None,
+            master=None,
             value: str = None,
             name: str = None
     ) -> None:
@@ -132,7 +139,7 @@ class StringVar(Variable):
 class IntVar(Variable):
     def __init__(
             self,
-            master = None,
+            master=None,
             value: int = None,
             name: str = None
     ) -> None:
@@ -148,7 +155,7 @@ class IntVar(Variable):
 class DoubleVar(Variable):
     def __init__(
             self,
-            master = None,
+            master=None,
             value: float = None,
             name: str = None
     ) -> None:
@@ -164,7 +171,7 @@ class DoubleVar(Variable):
 class BooleanVar(Variable):
     def __init__(
             self,
-            master = None,
+            master=None,
             value: bool = None,
             name: str = None
     ) -> None:
