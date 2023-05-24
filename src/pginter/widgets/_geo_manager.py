@@ -187,6 +187,9 @@ class GeometryManager(SupportsChildren):
                     self.set_active()
 
             case GeoNotes.SetNormal:
+                # also set children to inactive
+                self._notify_child_active_hover((-1, -1))
+
                 self.set_no_hover_active()
 
     # layout configuration

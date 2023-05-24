@@ -15,10 +15,6 @@ import typing as tp
 import pygame as pg
 import os.path
 
-# for type hints
-if tp.TYPE_CHECKING:
-    from .widgets import Frame
-
 
 DEFAULT_TITLE: str = "Window"
 DEFAULT_ICON: str = os.path.dirname(__file__) + "/icon.png"
