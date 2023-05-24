@@ -8,6 +8,7 @@ Author:
 Nilusink
 """
 from ._geo_manager import GeometryManager
+from concurrent.futures import Future
 from ..theme import ThemeManager
 from ..types import *
 import typing as tp
@@ -16,7 +17,7 @@ import pygame as pg
 
 if tp.TYPE_CHECKING:
     from .._pg_root import PgRoot
-    from concurrent.futures import Future
+
 
 RES_T = tp.TypeVar("RES_T")
 
@@ -249,7 +250,7 @@ class Frame(GeometryManager):
         return self.__parent
 
     @property
-    def root(self) -> PgRoot:
+    def root(self) -> "PgRoot":
         return self.parent.root
 
     def after(
