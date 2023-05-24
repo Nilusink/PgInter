@@ -7,8 +7,10 @@ the root of the window
 Author:
 Nilusink
 """
+from concurrent.futures import ThreadPoolExecutor as Pool, Future
 from .widgets import GeometryManager
 from .theme import ThemeManager
+from time import perf_counter
 from copy import deepcopy
 from .types import *
 import typing as tp
@@ -18,6 +20,17 @@ import os.path
 
 DEFAULT_TITLE: str = "Window"
 DEFAULT_ICON: str = os.path.dirname(__file__) + "/icon.png"
+
+
+RES_T = tp.TypeVar("RES_T")
+
+
+class _TimeoutCandidate(tp.TypedDict):
+    timeout_left: float
+    function: tp.Callable[[tp.Any], RES_T]
+    future: Future[RES_T]
+    args: tuple[tp.Any, ...]
+    kwargs: dict[str, tp.Any]
 
 
 class PgRoot(GeometryManager):
@@ -31,6 +44,10 @@ class PgRoot(GeometryManager):
     _mouse_pos: tuple[int, int] = ...
     _max_framerate: int = ...
 
+    __timeouts: list[_TimeoutCandidate]
+    _last_it_call: float
+    _tpool: Pool
+
     def __init__(
             self,
             title: str = ...,
@@ -41,7 +58,10 @@ class PgRoot(GeometryManager):
             margin: int = 0,
             max_framerate: int = 30
     ):
+        self._last_it_call = perf_counter()
         self._max_framerate = max_framerate
+        self._tpool = Pool(max_workers=10)
+        self.__timeouts = []
 
         super().__init__()
         self._theme = ThemeManager()
@@ -70,7 +90,9 @@ class PgRoot(GeometryManager):
 
         # set icon and caption
         pg.display.set_caption(DEFAULT_TITLE if title is ... else title)
-        img = pg.image.load(DEFAULT_ICON if icon_path is ... else icon_path, "icon")
+        img = pg.image.load(
+            DEFAULT_ICON if icon_path is ... else icon_path, "icon"
+        )
         pg.display.set_icon(img)
 
     # config
@@ -89,6 +111,10 @@ class PgRoot(GeometryManager):
     @property
     def mouse_pos(self) -> tuple[int, int]:
         return self._mouse_pos
+
+    @property
+    def root(self) -> tp.Self:
+        return self
 
     def get_focus(self) -> GeometryManager | None:
         """
@@ -148,7 +174,37 @@ class PgRoot(GeometryManager):
 
         self._notify_child_active_hover(self.mouse_pos)
 
-    def update_screen(self) -> None:
+    def update_idletasks(self) -> None:
+        """
+        updates all the functional tasks
+        """
+        self._event_handler()
+
+        # handle timeouts
+        for to in self.__timeouts.copy():
+            # calculate time since last function call
+            now = perf_counter()
+            delta = now - self._last_it_call
+            self._last_it_call = now
+
+            # remove time from timeout
+            to["timeout_left"] -= delta * 1000
+
+            # if the timeout is finished, execute the function
+            if to["timeout_left"] <= 0:
+                # create a function that populates the timeout future's result
+                # with the function return value
+                def curr_func():
+                    to["future"].set_result(to["function"](
+                        *to["args"], **to["kwargs"]
+                    ))
+
+                # submit the created function to the threadpool
+                # and remove it from the active timeouts
+                self._tpool.submit(curr_func)
+                self.__timeouts.remove(to)
+
+    def update(self) -> None:
         """
         update the screen
         """
@@ -160,19 +216,13 @@ class PgRoot(GeometryManager):
 
         pg.display.flip()
 
-    def update(self) -> None:
-        """
-        update events
-        """
-        self._event_handler()
-
     def mainloop(self):
         """
         run the windows main loop
         """
         while self._running:
+            self.update_idletasks()
             self.update()
-            self.update_screen()
 
             self._clk.tick(self._max_framerate)
 
@@ -468,3 +518,32 @@ class PgRoot(GeometryManager):
         """
         # make sure the geometry is up-to-date
         return pg.display.get_window_size()
+
+    # tool functions
+    def after(
+            self,
+            timeout: int,
+            function: tp.Callable[[tp.Any], RES_T],
+            *args,
+            **kwargs
+    ) -> Future[RES_T]:
+        """
+        calls the given function after timeout milliseconds
+
+        :param timeout: timeout in milliseconds
+        :param function: the function to call
+        :param args: the given functions positional arguments
+        :param kwargs: the given functions keyword arguments
+        :returns: a future with the function's result
+        """
+        n_future = Future[RES_T]()
+
+        self.__timeouts.append({
+            "timeout_left": timeout,
+            "function": function,
+            "future": n_future,
+            "args": args,
+            "kwargs": kwargs
+        })
+
+        return n_future
