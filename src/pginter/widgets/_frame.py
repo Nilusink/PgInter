@@ -72,7 +72,7 @@ class Frame(GeometryManager):
             width: int = ...,
             height: int = ...,
             bg: Color = ...,
-            layout: Layout = 0,
+            layout: Layout = Layout.Absolute,
             border_radius: int = ...,
             border_bottom_radius: int = ...,
             border_top_radius: int = ...,
@@ -406,11 +406,15 @@ class Frame(GeometryManager):
 
         width, height = self.get_size()
 
+        # check if the frame even exists
+        if width <= 0 or height <= 0:
+            return
+
         # print(f"frame size: {width, height=}, "
         #       f"{self.assigned_width, self.assigned_height=}, "
         #       f"{self._width_configured, self._height_configured=}")
 
-        # print(f"drawing: \"{type(self).__name__}\"", (width, height), self._x, self._y, self._display_config.bg)
+        # print(f"drawing: \"{type(self).__name__}\"", (width, height), self._x, self._y)
         _surface = pg.Surface((width, height), pg.SRCALPHA)
 
         # draw the frame
@@ -456,8 +460,13 @@ class Frame(GeometryManager):
         :param x: x-position
         :param y: y-position
         """
-        if self.__parent.layout is not Layout.Absolute:
-            raise TypeError("can't place in a container that is not managed by \"Absolute\"")
+        if not self.parent.check_set_layout(Layout.Absolute):
+            raise TypeError(
+                "can't place in a container that is"
+                "not managed by \"Absolute\""
+            )
+
+        self.parent.set_layout(Layout.Absolute)
 
         self.__parent.add_child(self, x=x, y=y)
 
@@ -470,11 +479,13 @@ class Frame(GeometryManager):
 
         :param anchor: where to orient the frame at (direction)
         """
-        if self.__parent.layout is not Layout.Pack:
+        if not self.parent.check_set_layout(Layout.Pack):
             raise TypeError(
                 "can't pack in a container that is not managed by \"Pack\"."
                 f" Configured Manager: {self.__parent.layout}"
             )
+
+        self.parent.set_layout(Layout.Pack)
 
         self.__parent.add_child(self, anchor=anchor.lower())
 
@@ -482,6 +493,8 @@ class Frame(GeometryManager):
             self,
             row: int,
             column: int,
+            rowspan: int = 1,
+            columnspan: int = 1,
             sticky: str = "",
             margin: int = 0,
     ) -> None:
@@ -490,13 +503,27 @@ class Frame(GeometryManager):
 
         :param row: the row the item should be placed in
         :param column: the column the item should be placed in
+        :param rowspan: how many rows the widget should occupy
+        :param columnspan: how many columns the widget should occupy
         :param sticky: expansion, can be a combination of "n", "e", "s", "w"
         :param margin: the distance to the grids borders
         """
-        if self.__parent.layout is not Layout.Grid:
-            raise TypeError("can't grid in a container that is not managed by \"Grid\"")
+        if not self.parent.check_set_layout(Layout.Grid):
+            raise TypeError(
+                "can't grid in a container that is not managed by \"Grid\""
+            )
 
-        self.__parent.add_child(self, row=row, column=column, sticky=sticky, margin=margin)
+        self.parent.set_layout(Layout.Grid)
+
+        self.__parent.add_child(
+            self,
+            row=row,
+            column=column,
+            sticky=sticky,
+            margin=margin,
+            rowspan=rowspan,
+            columnspan=columnspan
+        )
 
     def set_position(self, x: int, y: int) -> None:
         """

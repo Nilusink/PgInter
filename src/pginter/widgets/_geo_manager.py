@@ -46,6 +46,10 @@ class GeometryManager(SupportsChildren):
     ):
         super().__init__()
 
+        if layout is not ...:
+            if layout not in (Layout.Grid, Layout.Pack, Layout.Absolute):
+                raise ValueError(f"Invalid layout type: {layout}")
+
         self._layout = Layout.Absolute if layout is ... else layout
         self.layout_params = BetterDict({
             "margin": margin,
@@ -193,42 +197,85 @@ class GeometryManager(SupportsChildren):
         if layout not in Layout:
             raise ValueError("Invalid container layout: ", layout)
 
-        if len(self._child_params) > 0:
-            # if children are already present, delete them
-            for child, _param in self._child_params:
-                child.delete()
+        if self._layout != layout:
+            if len(self._child_params) > 0:
+                # if children are already present, delete them
+                for child, _param in self._child_params:
+                    child.delete()
 
-            self._child_params.clear()
+                self._child_params.clear()
 
-            raise RuntimeWarning("changing layout with children already present!")
+                raise RuntimeWarning(
+                    "changing layout with children already present!"
+                )
 
-        self._layout = layout
+            self._layout = layout
 
-    def grid_columnconfigure(self, column: int | tp.Iterable[int], weight: float = 1) -> None:
+    def check_set_layout(self, layout: Layout) -> bool:
+        """
+        checks if the layout can be changed
+        """
+        # not a real layout type
+        if layout not in Layout:
+            return False
+
+        # is already the same layout
+        if self._layout == layout:
+            return True
+
+        # no children present - can be easily changed
+        if len(self._children) == 0:
+            return True
+
+        return False
+
+    def grid_columnconfigure(
+            self,
+            column: int | tp.Iterable[int],
+            weight: float = 1
+    ) -> None:
         """
         configure one or more grid columns
         """
-        # if the column is given as a list, call this function with an integer as parameter
+        # if the column is given as a list,
+        # call this function with an integer as parameter
         if isinstance(column, tp.Iterable):
             for c in column:
                 self.grid_columnconfigure(c, weight=weight)
 
             return
 
+        # check if the layout is "grid"
+        if not self.check_set_layout(Layout.Grid):
+            raise ValueError("Invalid geometry type for grid-configuration")
+
+        self.set_layout(Layout.Grid)
+
         self._grid_params["columns"][column] = {
             "weight": weight
         }
 
-    def grid_rowconfigure(self, row: int | tp.Iterable[int], weight: float = 1) -> None:
+    def grid_rowconfigure(
+            self,
+            row: int | tp.Iterable[int],
+            weight: float = 1
+    ) -> None:
         """
         configure one or more grid rows
         """
-        # if the row is given a list, call this function with an integer as parameter
+        # if the row is given a list, call this
+        # function with an integer as parameter
         if isinstance(row, tp.Iterable):
             for r in row:
                 self.grid_rowconfigure(r, weight=weight)
 
             return
+
+        # check if the layout is "grid"
+        if not self.check_set_layout(Layout.Grid):
+            raise ValueError("Invalid geometry type for grid-configuration")
+
+        self.set_layout(Layout.Grid)
 
         self._grid_params["rows"][row] = {
             "weight": weight
@@ -351,15 +398,24 @@ class GeometryManager(SupportsChildren):
                     y_now -= size[1] + self.layout_params.padding
 
             case Layout.Grid:
-                rows: list[dict[str, tp.Any | float]] = []
-                columns: list[dict[str, tp.Any | float]] = []
+                rows: list[dict[
+                    str,
+                    list[tuple[tp.Any, BetterDict, bool]] | float
+                ]] = []
+                columns: list[dict[
+                    str,
+                    list[tuple[tp.Any, BetterDict, bool]] | float
+                ]] = []
 
                 for child, params in self._child_params:
                     row, column = params["row"], params["column"]
 
                     # if row was not yet made, make all previous ones
-                    if len(rows) <= row:
-                        for n_row in range(len(rows), row+1):
+                    min_rows = row + params.rowspan - 1
+                    min_columns = column + params.columnspan - 1
+
+                    if len(rows) <= min_rows:
+                        for n_row in range(len(rows), min_rows+1):
                             out = {
                                 "weight": 0,
                                 "children": []
@@ -373,8 +429,8 @@ class GeometryManager(SupportsChildren):
 
                             rows.append(out)
 
-                    if len(columns) <= column:
-                        for n_col in range(len(columns), column+1):
+                    if len(columns) <= min_columns:
+                        for n_col in range(len(columns), min_columns+1):
                             out = {
                                 "weight": 0,
                                 "children": []
@@ -388,17 +444,38 @@ class GeometryManager(SupportsChildren):
 
                             columns.append(out)
 
-                    rows[row]["children"].append((child, params))
-                    columns[column]["children"].append((child, params))
+                    rows[row]["children"].append((child, params, True))
+                    
+                    # if rowspan is given, also add the widget to all the
+                    # corresponding other rows
+                    if "rowspan" in params:
+                        for row_incrementor in range(1, params.rowspan):
+                            rows[row + row_incrementor]["children"]\
+                                .append(
+                                (child, params, False)
+                            )
+
+                    columns[column]["children"].append((child, params, True))
+
+                    if "columnspan" in params:
+                        for column_incrementor in range(1, params.columnspan):
+                            columns[column + column_incrementor]["children"]\
+                                .append(
+                                (child, params, False)
+                            )
 
                 matrix: list[list] = []
 
+                # append all the children to a 2d matrix and check if one
+                # cell has multiple children
                 for r in range(len(rows)):
                     matrix.append([])
 
                     for c in range(len(columns)):
-                        child = [chi for chi in rows[r]["children"]
-                                 if chi in columns[c]["children"]]
+                        child = [
+                            chi for chi in rows[r]["children"]
+                            if chi in columns[c]["children"]
+                        ]
                         child = list(child)
 
                         if len(child) > 1:
@@ -417,11 +494,14 @@ class GeometryManager(SupportsChildren):
                 for r, row in enumerate(rows):
                     rows[r]["max_size"] = 0
 
-                    for child, params in row["children"]:
+                    for child, params, _is_widget in row["children"]:
                         child.calculate_size()
                         _, y = child.get_size()
 
                         y += 2 * params.margin
+
+                        # split size between rows
+                        y /= params.rowspan
 
                         if y > rows[r]["max_size"]:
                             rows[r]["max_size"] = y
@@ -430,11 +510,14 @@ class GeometryManager(SupportsChildren):
                 for c, column in enumerate(columns):
                     columns[c]["max_size"] = 0
 
-                    for child, params in column["children"]:
+                    for child, params, _is_widget in column["children"]:
                         child.calculate_size()
                         x, _ = child.get_size()
 
                         x += 2 * params.margin
+
+                        # split size between columns
+                        x /= params.columnspan
 
                         if x > columns[c]["max_size"]:
                             columns[c]["max_size"] = x
@@ -460,24 +543,34 @@ class GeometryManager(SupportsChildren):
                     height = self.height
 
                 # assign extra space
-                extra_width = width - sum([c["max_size"] for c in columns if c["weight"] == 0])
-                extra_height = height - sum([r["max_size"] for r in rows if r["weight"] == 0])
+                extra_width = width - sum(
+                    [c["max_size"] for c in columns if c["weight"] == 0]
+                )
+                extra_height = height - sum(
+                    [r["max_size"] for r in rows if r["weight"] == 0]
+                )
 
-                total_row_weight = sum([row["weight"] for row in rows])
-                total_column_weight = sum([column["weight"] for column in columns])
+                total_row_weight = sum(
+                    [row["weight"] for row in rows]
+                )
+                total_column_weight = sum(
+                    [column["weight"] for column in columns]
+                )
 
                 # assign each row and column a specific size
                 for r in range(len(rows)):
                     if total_row_weight == 0:
                         rows[r]["height"] = 0
+
                     else:
                         # assign either the minimum size or the
                         # calculated dynamic one
-                        w_size = ((rows[r]["weight"] / total_row_weight) * extra_height).__floor__()
-                        rows[r]["height"] = max([w_size, rows[r]["max_size"]])
-                        # print(f"{w_size=}\t{rows[r]['max_size']=}")
+                        w_size = (
+                                (rows[r]["weight"] / total_row_weight)
+                                * extra_height
+                        ).__floor__()
+                        rows[r]["height"] = w_size
 
-                    # rows[r]["height"] += rows[r]["max_size"]
                     rows[r]["y_start"] = self.layout_params.padding / 2 + sum(
                         [prev_row["height"] for prev_row in rows[:r]]
                     )
@@ -485,16 +578,18 @@ class GeometryManager(SupportsChildren):
                     for c in range(len(columns)):
                         if total_column_weight == 0:
                             columns[c]["width"] = 0
+
                         else:
                             # assign either the minimum size or the
                             # calculated dynamic one
-                            w_size = ((columns[c]["weight"] / total_column_weight) * extra_width).__floor__()
-                            columns[c]["width"] = max([w_size, columns[c]["max_size"]])
-                            # print(f"{w_size=}\t{columns[c]['max_size']=}")
+                            w_size = (
+                                    (columns[c]["weight"] / total_column_weight)
+                                    * extra_width
+                            ).__floor__()
+                            columns[c]["width"] = w_size
 
-                        # columns[c]["width"] += columns[c]["max_size"]
                         columns[c]["x_start"] = self.layout_params.padding / 2\
-                                                + sum(
+                            + sum(
                             [prev_col["width"] for prev_col in columns[:c]]
                         )
 
@@ -504,12 +599,18 @@ class GeometryManager(SupportsChildren):
                     # size = list(child.calculate_size())
                     size = [child._width, child._height]
 
-                    row, column = params["row"], params["column"]
-                    sticky = params["sticky"]
-                    margin = params["margin"]
+                    row, column = params.row, params.column
+                    sticky = params.sticky
+                    margin = params.margin
 
-                    width = columns[column]["width"]
-                    height = rows[row]["height"]
+                    width = sum([
+                        columns[c]["width"] for c in
+                        range(column, column + params.columnspan)
+                    ])
+                    height = sum([
+                        rows[r]["height"] for r in
+                        range(row, row + params.rowspan)
+                    ])
 
                     x = columns[column]["x_start"]
                     y = rows[row]["y_start"]
@@ -537,7 +638,7 @@ class GeometryManager(SupportsChildren):
 
                         child.assigned_height = size[1]
 
-                    child.set_position(x + margin / 2, y + margin / 2)
+                    child.set_position(x + margin, y + margin)
 
             case _:
                 raise ValueError(f"Invalid geometry type: {self._layout}")
