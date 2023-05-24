@@ -116,11 +116,32 @@ class GeometryManager(SupportsChildren):
         remove focus from this item
         """
 
+    def _on_active(self) -> None:
+        """
+        called when button is clicked
+        not implemented by default
+        """
+
+    def _on_hover(self) -> None:
+        """
+        called on hover
+        not implemented by default
+        """
+
+    def _on_no_active_hover(self) -> None:
+        """
+        called when either hover or active goes back to normal
+        not implemented by default
+        """
+
     def set_active(self, override: bool = False) -> None:
         """
         change the widget to an active state
         """
         if not self._child_override:
+            if not self._is_active:  # only call on new event
+                self._on_active()
+
             self._is_hover = False
             self._is_active = True
 
@@ -131,6 +152,9 @@ class GeometryManager(SupportsChildren):
         set the widget to a hover state
         """
         if not self._child_override:
+            if not self._is_hover:  # only call on new event
+                self._on_hover()
+
             self._is_hover = True
             self._is_active = False
 
@@ -141,6 +165,9 @@ class GeometryManager(SupportsChildren):
         set the widget to "normal" mode
         """
         if not self._child_override:
+            if self._is_hover or self._is_active:  # only call no new event
+                self._on_no_active_hover()
+
             self._is_hover = False
             self._is_active = False
 

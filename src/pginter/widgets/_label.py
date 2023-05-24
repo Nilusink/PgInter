@@ -71,21 +71,31 @@ class Label(Frame):
         """
         draw the Label
         """
+        current_style = self.style
+
+        if self.is_hover:
+            current_style = self.style.overwrite(self.hover_style)
+
+        if self.is_active:
+            current_style = self.style.overwrite(self.hover_style).overwrite(
+                self.active_style
+            )
+
         # get text
         r_text = self._font.render(
             self._text_var.get(),
             True,
-            self.style.color.irgba
+            current_style.color.irgba
         )
 
         width, height = r_text.get_size()
         bg_width, bg_height = self.get_size()
 
         border_radius = max([
-            self.style.borderTopLeftRadius,
-            self.style.borderTopRightRadius,
-            self.style.borderBottomLeftRadius,
-            self.style.borderBottomRightRadius
+            current_style.borderTopLeftRadius,
+            current_style.borderTopRightRadius,
+            current_style.borderBottomLeftRadius,
+            current_style.borderBottomRightRadius
         ])
         frame_size = (
             width + border_radius,

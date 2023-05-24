@@ -12,6 +12,7 @@ from ..utils import arg_or_default
 from ..theme import ThemeManager
 from ._label import Label
 from ._frame import Frame
+from copy import copy
 import typing as tp
 
 
@@ -39,6 +40,55 @@ class Button(Frame):
         self._command = command
         self._text_var = textvariable
 
+        # set theme colors
+        if bg is ... and "bg" in parent.theme.button:
+            bg = parent.theme.button.bg
+
+        if fg is ... and "fg" in parent.theme.button:
+            fg = parent.theme.button.fg
+
+        hover_bg = hover_fg = ...
+        active_bg = active_fg = ...
+        if "hover_bg" in parent.theme.button:
+            hover_bg = parent.theme.button.hover_bg
+
+        if "hover_fg" in parent.theme.button:
+            hover_fg = parent.theme.button.hover_fg
+
+        if "active_bg" in parent.theme.button:
+            active_bg = parent.theme.button.active_bg
+
+        if "active_fg" in parent.theme.button:
+            active_fg = parent.theme.button.active_fg
+
+        if "style" in kwargs:
+            if kwargs["style"].backgroundColor is ...:
+                kwargs["style"].backgroundColor = bg
+
+            if kwargs["style"].color is ...:
+                kwargs["style"].color = fg
+
+        # create hover and active style if they don't exist in kwargs
+        if "hover_style" not in kwargs:
+            kwargs["hover_style"] = Style()
+
+        if "active_style" not in kwargs:
+            kwargs["active_style"] = Style()
+
+        # apply default arguments
+        if kwargs["hover_style"].backgroundColor is ...:
+            kwargs["hover_style"].backgroundColor = hover_bg
+
+        if kwargs["hover_style"].color is ...:
+            kwargs["hover_style"].color = hover_fg
+
+        if kwargs["active_style"].backgroundColor is ...:
+            kwargs["active_style"].backgroundColor = active_bg
+
+        if kwargs["active_style"].color is ...:
+            kwargs["active_style"].color = active_fg
+
+        # initialize parent
         super().__init__(
             parent=parent,
             width=width,
@@ -53,37 +103,25 @@ class Button(Frame):
         self.grid_rowconfigure(0, weight=1)
 
         self.style.color = arg_or_default(fg, Color.white(), ...)
-        self.hover_style.backgroundColor = Color.from_hex("#888")
-        self.active_style.backgroundColor = Color.from_hex("#bbb")
+
+        label_hover: Style = copy(kwargs["hover_style"])
+        label_active: Style = copy(kwargs["active_style"])
+        label_hover.backgroundColor = Color.transparent()
+        label_active.backgroundColor = Color.transparent()
 
         self._label = Label(
             parent=self,
             text=text,
             textvariable=textvariable,
             fg=fg,
-            style=Style(backgroundColor=Color.transparent())
+            style=Style(backgroundColor=Color.transparent()),
+            hover_style=label_hover,
+            active_style=label_active
         )
         self._label.grid(row=0, column=0, sticky="nsew")
 
-        self.style.notify_on(
-            "color",
-            lambda _, key: self._sync_label_style(key, "normal")
-        )
-
-        self.hover_style.notify_on(
-            "color",
-            lambda _, key: self._sync_label_style(key, "hover")
-        )
-
-        self.active_style.notify_on(
-            "color",
-            lambda _, key: self._sync_label_style(key, "active")
-        )
-
         # first time style sync
         self._sync_label_style("color", "normal")
-        self._sync_label_style("color", "hover")
-        self._sync_label_style("color", "active")
 
     def draw(self, surface) -> None:
         super().draw(surface)
@@ -124,3 +162,20 @@ class Button(Frame):
             case _:
                 super().notify(event, info)
 
+    def _on_hover(self) -> None:
+        """
+        set the label to hover
+        """
+        self._label.set_hover(False)
+
+    def _on_active(self) -> None:
+        """
+        set the label to active
+        """
+        self._label.set_active(False)
+
+    def _on_no_active_hover(self) -> None:
+        """
+        set the label to no active-hover
+        """
+        self._label.set_no_hover_active(False)

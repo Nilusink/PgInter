@@ -262,16 +262,6 @@ class Frame(GeometryManager):
         """
         self.parent.notify_focus(widget)
 
-    def _on_focus(self) -> None:
-        """
-        called when button is clicked
-        """
-
-    def _on_hover(self) -> None:
-        """
-        called on hover
-        """
-
     def configure(self, **kwargs) -> None:
         """
         configure any of the init parameters (except parent)
