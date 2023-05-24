@@ -406,11 +406,15 @@ class Frame(GeometryManager):
 
         width, height = self.get_size()
 
+        # check if the frame even exists
+        if width <= 0 or height <= 0:
+            return
+
         # print(f"frame size: {width, height=}, "
         #       f"{self.assigned_width, self.assigned_height=}, "
         #       f"{self._width_configured, self._height_configured=}")
 
-        # print(f"drawing: \"{type(self).__name__}\"", (width, height), self._x, self._y, self._display_config.bg)
+        # print(f"drawing: \"{type(self).__name__}\"", (width, height), self._x, self._y)
         _surface = pg.Surface((width, height), pg.SRCALPHA)
 
         # draw the frame

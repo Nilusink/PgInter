@@ -561,14 +561,16 @@ class GeometryManager(SupportsChildren):
                 for r in range(len(rows)):
                     if total_row_weight == 0:
                         rows[r]["height"] = 0
+
                     else:
                         # assign either the minimum size or the
                         # calculated dynamic one
-                        w_size = ((rows[r]["weight"] / total_row_weight) * extra_height).__floor__()
-                        rows[r]["height"] = max([w_size, rows[r]["max_size"]])
-                        # print(f"{w_size=}\t{rows[r]['max_size']=}")
+                        w_size = (
+                                (rows[r]["weight"] / total_row_weight)
+                                * extra_height
+                        ).__floor__()
+                        rows[r]["height"] = w_size
 
-                    # rows[r]["height"] += rows[r]["max_size"]
                     rows[r]["y_start"] = self.layout_params.padding / 2 + sum(
                         [prev_row["height"] for prev_row in rows[:r]]
                     )
@@ -576,14 +578,16 @@ class GeometryManager(SupportsChildren):
                     for c in range(len(columns)):
                         if total_column_weight == 0:
                             columns[c]["width"] = 0
+
                         else:
                             # assign either the minimum size or the
                             # calculated dynamic one
-                            w_size = ((columns[c]["weight"] / total_column_weight) * extra_width).__floor__()
-                            columns[c]["width"] = max([w_size, columns[c]["max_size"]])
-                            # print(f"{w_size=}\t{columns[c]['max_size']=}")
+                            w_size = (
+                                    (columns[c]["weight"] / total_column_weight)
+                                    * extra_width
+                            ).__floor__()
+                            columns[c]["width"] = w_size
 
-                        # columns[c]["width"] += columns[c]["max_size"]
                         columns[c]["x_start"] = self.layout_params.padding / 2\
                             + sum(
                             [prev_col["width"] for prev_col in columns[:c]]
