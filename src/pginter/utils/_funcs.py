@@ -10,7 +10,11 @@ Nilusink
 import typing as tp
 
 
-def arg_or_default(value: tp.Any, default_value: tp.Any, check_if: tp.Any = ...) -> tp.Any:
+def arg_or_default(
+        value: tp.Any,
+        default_value: tp.Any,
+        check_if: tp.Any = ...
+) -> tp.Any:
     """
     :param value: the value to check
     :param default_value: what the value should be if it equals `check_if`
@@ -19,7 +23,10 @@ def arg_or_default(value: tp.Any, default_value: tp.Any, check_if: tp.Any = ...)
     return default_value if value is check_if else value
 
 
-def point_in_box(point: tuple[int, int], box: tuple[int, int, int, int]) -> bool:
+def point_in_box(
+        point: tuple[int, int],
+        box: tuple[int, int, int, int]
+) -> bool:
     """
     check if a point is inside a box
 

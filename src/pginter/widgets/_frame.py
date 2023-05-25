@@ -18,6 +18,7 @@ import pygame as pg
 # will get an error if they try to use the image widget without having it
 # installed
 try:
+    # noinspection PyUnresolvedReferences
     from PIL import Image
     PIL_EXISTS = True
 
@@ -127,12 +128,14 @@ class Frame(GeometryManager):
                 "\t\t\"pip install pillow\""
             )
 
+        image: Image.Image
         self._image = image
 
         self._binds = []
 
         self.style = style if style is not ... else Style()
-        self.active_style = active_style if active_style is not ... else Style()
+        self.active_style = active_style if active_style\
+            is not ... else Style()
         self.hover_style = hover_style if hover_style is not ... else Style()
 
         if min_width is not ...:
@@ -143,7 +146,10 @@ class Frame(GeometryManager):
 
         self.__parent = parent
 
-        self.__parent.theme.notify_on(ThemeManager.NotifyEvent.theme_reload, self.notify)
+        self.__parent.theme.notify_on(
+            ThemeManager.NotifyEvent.theme_reload,
+            self.notify
+        )
 
         if all([
             "border_top_left_radius" in self.theme.frame,
@@ -185,10 +191,12 @@ class Frame(GeometryManager):
                 self.style.borderWidth = self.theme.frame.border_width
 
         if margin is ...:
-            margin = self.theme.frame.margin if "margin" in self.theme.frame else 0
+            margin = self.theme.frame.margin if "margin" in\
+                                                self.theme.frame else 0
 
         if padding is ...:
-            padding = self.theme.frame.padding if "padding" in self.theme.frame else 0
+            padding = self.theme.frame.padding if "padding" in\
+                                                  self.theme.frame else 0
 
         if self.style.margin is ...:
             self.style.margin = margin
@@ -218,16 +226,19 @@ class Frame(GeometryManager):
             self.style.borderWidth = border_width
 
         if self.style.borderColor is ...:
-            self.style.borderColor = self.theme.frame.border if border_color is ... else border_color
+            self.style.borderColor = self.theme.frame.border\
+                if border_color is ... else border_color
 
         # border radii
         if border_radius is ... and "border_radius" in self.theme.frame:
             border_radius = self.theme.frame.border_radius
 
-        if border_bottom_radius is ... and "border_bottom_radius" in self.theme.frame:
+        if border_bottom_radius is ... and\
+                "border_bottom_radius" in self.theme.frame:
             border_bottom_radius = self.theme.frame.border_bottom_radius
 
-        if border_top_radius is ... and "border_top_radius" in self.theme.frame:
+        if border_top_radius is ... and\
+                "border_top_radius" in self.theme.frame:
             border_top_radius = self.theme.frame.border_top_radius
 
         if self.style.borderTopLeftRadius is ...:
@@ -290,7 +301,7 @@ class Frame(GeometryManager):
     def focused(self) -> bool:
         return self._focused
 
-    def set_focus(self):
+    def set_focus(self, **kwargs):
         """
         set this item as currently focused
         """

@@ -69,7 +69,12 @@ class ThemeManager:
         """
         reload the config theme
         """
-        self._config = json.load(open(DEFAULT_THEME if self.theme_path is ... else self.theme_path, "r"))
+        self._config = json.load(
+            open(
+                DEFAULT_THEME if self.theme_path is ... else self.theme_path,
+                "r"
+            )
+        )
 
         # convert each color to a color class instance
         def convert_color(color):
@@ -79,10 +84,14 @@ class ThemeManager:
                     return Color.from_hex(color, 255)
 
                 elif color.startswith("rgb"):
-                    return Color.from_rgb(*[int(val) for val in color.lstrip("rgb").split(",")])
+                    return Color.from_rgb(
+                        *[int(val) for val in color.lstrip("rgb").split(",")]
+                    )
 
                 else:
-                    raise ValueError(f"Invalid color value in theme file: \"{color}\"")
+                    raise ValueError(
+                        f"Invalid color value in theme file: \"{color}\""
+                    )
 
             # rgb values written as tuple
             elif isinstance(color, list):
@@ -112,7 +121,10 @@ class ThemeManager:
             self._appearance = appearance
 
         else:
-            raise ValueError(f"Expected \"Appearance\", got \"{appearance.__class__.__name__}\"")
+            raise ValueError(
+                f"Expected \"Appearance\", got "
+                f"\"{appearance.__class__.__name__}\""
+            )
 
         self.reload_theme()
 

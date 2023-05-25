@@ -89,6 +89,7 @@ class Variable:
         if mode == _TraceModes.array:
             raise RuntimeWarning("mode \"array\" is currently not implemented")
 
+        # noinspection PyTypeChecker
         self._traces.append((mode, callback_name))
 
     def trace_remove(

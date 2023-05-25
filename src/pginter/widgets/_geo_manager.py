@@ -24,7 +24,8 @@ class GeometryManager(SupportsChildren):
     Manages how children are placed inside a parent container
     """
     _layout: Layout = Layout.Absolute
-    _width: float = 0   # -1 means not configured -> takes minimum size required by its children
+    _width: float = 0   # -1 means not configured -> takes minimum size
+    # required by its children
     _height: float = 0  # or the size it gets by the parents geometry manager
     assigned_width: float = 0
     assigned_height: float = 0
@@ -106,7 +107,7 @@ class GeometryManager(SupportsChildren):
     def is_active(self) -> bool:
         return self._is_active
 
-    def set_focus(self, widget: "GeometryManager"):
+    def set_focus(self, widget: tp.Union["GeometryManager", None]):
         """
         set this item as currently focused
         """
@@ -186,6 +187,7 @@ class GeometryManager(SupportsChildren):
             pos = child.get_position()
             size = child.get_size()
 
+            # noinspection PyTypeChecker
             if point_in_box(mouse_pos, (*pos, *size)):
                 has_hit = True
                 child.notify(
@@ -375,11 +377,19 @@ class GeometryManager(SupportsChildren):
                         right["total_x"] += child_size[0]
                         right["total_y"] += child_size[1]
 
-                top["total_y"] += self.layout_params.padding * len(top["children"]) - 1
-                bottom["total_y"] += self.layout_params.padding * len(bottom["children"]) - 1
+                top["total_y"] += self.layout_params.padding * len(
+                    top["children"]
+                ) - 1
+                bottom["total_y"] += self.layout_params.padding * len(
+                    bottom["children"]
+                ) - 1
 
-                left["total_x"] += self.layout_params.padding * len(left["children"]) - 1
-                right["total_x"] += self.layout_params.padding * len(right["children"]) - 1
+                left["total_x"] += self.layout_params.padding * len(
+                    left["children"]
+                ) - 1
+                right["total_x"] += self.layout_params.padding * len(
+                    right["children"]
+                ) - 1
 
                 # if not configured, set own size
                 total_x = max([top["total_x"], bottom["total_x"],
@@ -564,10 +574,12 @@ class GeometryManager(SupportsChildren):
                 min_height = sum([r["max_size"] for r in rows])
 
                 if len(columns) + len(rows) > 0:
-                    if width == 0 or height == 0 and not self._width_configured:
+                    if width == 0 or height == 0 and not\
+                            self._width_configured:
                         self._width = min_width
 
-                    if width == 0 or height == 0 and not self._height_configured:
+                    if width == 0 or height == 0 and not\
+                            self._height_configured:
                         self._height = min_height
 
                 if self._width_configured:
@@ -617,7 +629,10 @@ class GeometryManager(SupportsChildren):
                             # assign either the minimum size or the
                             # calculated dynamic one
                             w_size = (
-                                    (columns[c]["weight"] / total_column_weight)
+                                    (
+                                            columns[c]["weight"]
+                                            / total_column_weight
+                                    )
                                     * extra_width
                             ).__floor__()
                             columns[c]["width"] = w_size
@@ -668,7 +683,6 @@ class GeometryManager(SupportsChildren):
 
                         if "s" in sticky:
                             size[1] += (y_diff / 2) - params.margin
-                            # print("south: ", size, box_x, box_y, "\t\t", width, height)
 
                         child.assigned_height = size[1]
 

@@ -20,7 +20,13 @@ class Color:
 
     # constructors
     @classmethod
-    def from_rgb(cls, red: float, green: float, blue: float, alpha: float = ...) -> "Color":
+    def from_rgb(
+            cls,
+            red: float,
+            green: float,
+            blue: float,
+            alpha: float = ...
+    ) -> "Color":
         new = cls()
         new.rgb = [red, green, blue] + ([255] if alpha is ... else [alpha])
 
@@ -85,7 +91,11 @@ class Color:
         return tuple(self._rgb) + (self._alpha,)
 
     @rgb.setter
-    def rgb(self, value: tuple[float, float, float] | tuple[float, float, float, float]) -> None:
+    def rgb(
+            self,
+            value: tuple[float, float, float]
+            | tuple[float, float, float, float]
+    ) -> None:
         if len(value) == 4:
             *self._rgb, self._alpha = value
 
@@ -93,7 +103,10 @@ class Color:
             self._rgb = value
 
         else:
-            raise ValueError(f"The rgb tuple must have a length of either 3 or 4!  (not {len(value)})")
+            raise ValueError(
+                f"The rgb tuple must have a length"
+                f"of either 3 or 4!  (not {len(value)})"
+            )
 
         self._recalculate_colors("r")
 
@@ -125,7 +138,10 @@ class Color:
             self._hex = value
 
         else:
-            raise ValueError(f"The hex string must be either 3, 4 or 6 or 7 characters long! (not {len(value)})")
+            raise ValueError(
+                f"The hex string must be either 3, 4"
+                f"or 6 or 7 characters long! (not {len(value)})"
+            )
 
         self._recalculate_colors("h")
 
@@ -138,7 +154,10 @@ class Color:
         self._alpha = value
 
     # internal stuff
-    def _recalculate_colors(self, calc_from: tp.Literal["r", "rgb", "h", "hex"]):
+    def _recalculate_colors(
+            self,
+            calc_from: tp.Literal["r", "rgb", "h", "hex"]
+    ):
         if calc_from in ("rgb", "r"):
             self._hex = f"#" \
                         f"{hex(self.rgb[0].__floor__())[2:]}" \

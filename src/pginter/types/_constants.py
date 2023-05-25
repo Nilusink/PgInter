@@ -13,7 +13,8 @@ RIGHT: str = "right"
 TOP: str = "top"
 BOTTOM: str = "bottom"
 
-# sticky (no I didn't put in all combinations because you can just make them yourself, the order doesn't matter)
+# sticky (no I didn't put in all combinations because you
+# can just make them yourself, the order doesn't matter)
 N: str = "n"
 S: str = "s"
 E: str = "e"

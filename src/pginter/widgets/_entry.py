@@ -154,9 +154,15 @@ class Entry(Frame):
         self._sync_label_style("color", "hover")
         self._sync_label_style("color", "active")
 
-        self.style.notify_on("color", lambda *_: self._sync_label_style("color"))
-        self.hover_style.notify_on("color", lambda *_: self._sync_label_style("color", "hover"))
-        self.active_style.notify_on("color", lambda *_: self._sync_label_style("color", "active"))
+        self.style.notify_on(
+            "color", lambda *_: self._sync_label_style("color")
+        )
+        self.hover_style.notify_on(
+            "color", lambda *_: self._sync_label_style("color", "hover")
+        )
+        self.active_style.notify_on(
+            "color", lambda *_: self._sync_label_style("color", "active")
+        )
 
     def _sync_label_style(
             self, key: str,

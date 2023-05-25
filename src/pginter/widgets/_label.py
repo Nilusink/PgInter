@@ -67,6 +67,7 @@ class Label(Frame):
         )
 
         # initialize font
+        # noinspection PyTypeChecker
         self._font = pg.font.SysFont(None, self.style.fontSize)
 
     @property
