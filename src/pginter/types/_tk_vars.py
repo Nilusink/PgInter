@@ -78,8 +78,6 @@ class Variable:
         self._value = value
         self._check_send(_TraceModes.write)
 
-        print("got set")
-
     def trace_add(
             self,
             mode: _TraceModes | list[_TraceModes],
@@ -111,6 +109,14 @@ class Variable:
         """
         for m, c in enumerate(self._traces):
             print(f"{m}: {c}")
+
+    def __iadd__(self, other: _T) -> tp.Self:
+        self.set(self._value + other)
+        return self
+
+    def __isub__(self, other: _T) -> tp.Self:
+        self.set(self._value - other)
+        return self
 
     def __del__(self) -> None:
         """

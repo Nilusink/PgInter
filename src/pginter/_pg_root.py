@@ -122,11 +122,15 @@ class PgRoot(GeometryManager):
         """
         return self._focus_item
 
-    def set_focus(self, widget: tp.Union["GeometryManager", None, tp.Any] = None):
+    def set_focus(
+            self,
+            widget: tp.Union["GeometryManager", None, tp.Any] = None
+    ) -> None:
         """
         set the focused item
         """
-        self._focus_item.stop_focus()
+        if self._focus_item is not None:
+            self._focus_item.stop_focus()
 
         if widget is not None:
             widget.set_focus()
@@ -159,6 +163,20 @@ class PgRoot(GeometryManager):
             match event.type:
                 case pg.QUIT:
                     self._running = False
+
+                case pg.KEYDOWN:
+                    if self._focus_item is not None:
+                        self._focus_item.notify(
+                            KeyboardNotifyEvent.key_down,
+                            event
+                        )
+
+                case pg.KEYUP:
+                    if self._focus_item is not None:
+                        self._focus_item.notify(
+                            KeyboardNotifyEvent.key_up,
+                            event
+                        )
 
                 # case pg.VIDEORESIZE:  # window size changed
                 #     width, height = event.size

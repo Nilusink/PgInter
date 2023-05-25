@@ -20,6 +20,7 @@ class Label(Frame):
     A thing to display text
     """
     _text_var: Variable = ...
+    _text_size: tuple[int, int] = ...
 
     def __init__(
             self,
@@ -34,6 +35,7 @@ class Label(Frame):
         """
 
         """
+        self._text_size = (0, 0)
         self._text_var = arg_or_default(
             textvariable,
             StringVar(value=arg_or_default(text, "Button", ...)),
@@ -54,7 +56,7 @@ class Label(Frame):
         if "style" in args:
             style = style.overwrite(args["style"])
 
-        args.pop("style")
+            args.pop("style")
 
         # initialize parent class
         super().__init__(
@@ -66,6 +68,14 @@ class Label(Frame):
 
         # initialize font
         self._font = pg.font.SysFont(None, self.style.fontSize)
+
+    @property
+    def text_size(self) -> tuple[int, int]:
+        return self._text_size
+
+    @property
+    def text_variable(self) -> Variable:
+        return self._text_var
 
     def draw(self, surface: pg.Surface) -> None:
         """
@@ -89,6 +99,8 @@ class Label(Frame):
         )
 
         width, height = r_text.get_size()
+        self._text_size = width, height
+
         bg_width, bg_height = self.get_size()
 
         border_radius = max([
@@ -120,6 +132,21 @@ class Label(Frame):
         )
 
         surface.blit(r_text, pos)
+
+    def configure(
+            self,
+            text: str = ...,
+            textvariable: Variable = ...,
+            **kwargs
+    ) -> None:
+        """
+        configure the label properties
+        """
+        if text is not ...:
+            self._text_var.set(text)
+
+        if textvariable is not ...:
+            self._text_var = textvariable
 
     def notify(
             self, event: ThemeManager.NotifyEvent | Style.NotifyEvent,

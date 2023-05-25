@@ -22,7 +22,7 @@ class Appearance(Enum):
     light = 1
 
 
-class NotifyEvent(Enum):
+class _NotifyEvent(Enum):
     theme_reload = 0
 
 
@@ -31,7 +31,7 @@ class ThemeManager:
     the build-in theme manager
     """
     Appearance = Appearance
-    NotifyEvent = NotifyEvent
+    NotifyEvent = _NotifyEvent
     _appearance: Appearance = Appearance.dark
     _notify_on: dict[NotifyEvent, list[tp.Callable]] = ...
     _config: dict[str, str | dict] = ...
@@ -51,7 +51,7 @@ class ThemeManager:
         # load the theme
         self._theme_path = theme_path
         self._notify_on = {
-            NotifyEvent.theme_reload: []
+            _NotifyEvent.theme_reload: []
         }
 
         self.reload_theme()
@@ -99,8 +99,8 @@ class ThemeManager:
                 self._config[key][ckey] = convert_color(color)
 
         # notify
-        for element in self._notify_on[NotifyEvent.theme_reload]:
-            element(NotifyEvent.theme_reload)
+        for element in self._notify_on[_NotifyEvent.theme_reload]:
+            element(_NotifyEvent.theme_reload)
 
     def set_appearance(self, appearance: Appearance) -> None:
         """

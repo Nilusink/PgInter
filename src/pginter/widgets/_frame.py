@@ -22,26 +22,6 @@ if tp.TYPE_CHECKING:
 RES_T = tp.TypeVar("RES_T")
 
 
-class DisplayConfig(tp.TypedDict):
-    bg: Color
-    ulr: int  # border radii
-    urr: int
-    llr: int
-    lrr: int
-    border_width: int
-    border_color: Color
-
-
-class DisplayConfigConfigured(tp.TypedDict):
-    bg: bool
-    ulr: bool
-    urr: bool
-    llr: bool
-    lrr: bool
-    border_width: bool
-    border_color: bool
-
-
 def display_configurify(key: str) -> str:
     """
     convert a Frame init key to it's corresponding DisplayConfig key
@@ -61,12 +41,19 @@ def display_configurify(key: str) -> str:
     return key
 
 
+class _Bind(tp.TypedDict):
+    id: int
+    event: FrameBind
+    function: tp.Callable[[tp.Any], tp.Any | None]
+
+
 class Frame(GeometryManager):
     """
     The base widget
     """
     __parent: tp.Union["Frame", tp.Any] = ...
     _focused: bool = False
+    _binds: list[_Bind]
     style: Style = ...
     hover_style: Style = ...
     active_style: Style = ...
@@ -109,11 +96,12 @@ class Frame(GeometryManager):
         :param border_width: how thick the border of the box should be
         :param border_color: the color of the border
         """
+        self._binds = []
+
         self.style = style if style is not ... else Style()
         self.active_style = active_style if active_style is not ... else Style()
         self.hover_style = hover_style if hover_style is not ... else Style()
 
-        # TODO: implement styles
         if min_width is not ...:
             self._width = min_width
 
@@ -163,12 +151,6 @@ class Frame(GeometryManager):
             if "border_width" in self.theme.frame:
                 self.style.borderWidth = self.theme.frame.border_width
 
-        if self.style.borderColor is ...:
-            self.style.borderColor = Color.from_rgb(255, 0, 0)
-
-            if "border" in self.theme.frame:
-                self.style.borderColor = self.theme.frame.border
-
         if margin is ...:
             margin = self.theme.frame.margin if "margin" in self.theme.frame else 0
 
@@ -199,7 +181,7 @@ class Frame(GeometryManager):
                     self.__parent.style.backgroundColor == self.theme.frame.bg1:
                 self.style.backgroundColor = self.theme.frame.bg2 if bg is ... else bg
 
-        if border_width is not ... and self.style.borderWidth is ...:
+        if border_width is not ... and self.style.borderWidth == 0:
             self.style.borderWidth = border_width
 
         if self.style.borderColor is ...:
@@ -271,18 +253,20 @@ class Frame(GeometryManager):
         """
         return self.root.after(timeout, function, *args, **kwargs)
 
+    @property
+    def focused(self) -> bool:
+        return self._focused
+
     def set_focus(self):
         """
         set this item as currently focused
         """
-        self.parent.notify_focus(self)
         self._focused = True
 
     def stop_focus(self):
         """
         remove focus from this item
         """
-        self.parent.notify_focus()
         self._focused = False
 
     def notify_focus(self, widget: tp.Union["GeometryManager", None] = None):
@@ -450,6 +434,7 @@ class Frame(GeometryManager):
         )
 
         if current_style.borderWidth > 0:
+            # print(f"drawing border, {current_style.borderColor}")
             pg.draw.rect(
                 _surface,
                 current_style.borderColor.irgba,
@@ -557,6 +542,83 @@ class Frame(GeometryManager):
         """
         self.width = width
         self.height = height
+
+    def bind(
+            self,
+            sequence: FrameBind,
+            func: tp.Callable[[tp.Any], tp.Any | None] = ...,
+            add: tp.Literal["", "-"] | bool | None = ...
+    ) -> int:
+        """
+        bind a callback to an event
+
+        :param sequence: the event to listen for
+        :param func: the function callback
+        :param add: in case you want multiple callbacks for one event
+        :returns: function id (for unbinding)
+        """
+        # if add isn't specified, remove all already existing binds
+        if not add or add != "+":
+            for b in self._binds.copy():
+                if b["event"] == sequence:
+                    self._binds.remove(b)
+
+        new_id = 0
+        if self._binds:
+            new_id = max([e["id"] for e in self._binds]) + 1
+
+        self._binds.append({
+            "id": new_id,
+            "event": sequence,
+            "function": func
+        })
+
+        return new_id
+
+    def unbind(self, func_id: int) -> None:
+        """
+        removes a bind event
+        """
+        for bind in self._binds:
+            if bind["id"] == func_id:
+                self._binds.remove(bind)
+                return
+
+    def _execute_event(self, event: FrameBind, *args, **kwargs) -> None:
+        """
+        check if a bind exists for the given event and if one does,
+        execute it with the given parameters
+        """
+        for b in self._binds:
+            if b["event"].value == event.value:
+                b["function"](*args, **kwargs)
+
+    def _on_hover(self) -> None:
+        """
+        called on hover
+        """
+        self._execute_event(FrameBind.hover)
+
+    def _on_active(self) -> None:
+        """
+        called on active
+        """
+        self.root.set_focus(self)
+        self._execute_event(FrameBind.active)
+
+    def _on_no_active_hover(
+            self,
+            from_active: bool = False,
+            from_hover: bool = False
+    ) -> None:
+        """
+        called on no active / hover
+        """
+        if from_active:
+            self._execute_event(FrameBind.active_release)
+
+        if from_hover:
+            self._execute_event(FrameBind.hover_release)
 
     def delete(self) -> None:
         """

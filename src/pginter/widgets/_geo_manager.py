@@ -128,7 +128,11 @@ class GeometryManager(SupportsChildren):
         not implemented by default
         """
 
-    def _on_no_active_hover(self) -> None:
+    def _on_no_active_hover(
+            self,
+            from_active: bool = False,
+            from_hover: bool = False
+    ) -> None:
         """
         called when either hover or active goes back to normal
         not implemented by default
@@ -166,7 +170,7 @@ class GeometryManager(SupportsChildren):
         """
         if not self._child_override:
             if self._is_hover or self._is_active:  # only call no new event
-                self._on_no_active_hover()
+                self._on_no_active_hover(self._is_active, self._is_hover)
 
             self._is_hover = False
             self._is_active = False

@@ -7,7 +7,6 @@ A pygame surface to draw on
 Author:
 Nilusink
 """
-from ..types import Color, Layout
 from ._frame import Frame
 import typing as tp
 import pygame as pg

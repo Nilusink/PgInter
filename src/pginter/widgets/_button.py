@@ -7,9 +7,8 @@ Something you can click
 Author:
 Nilusink
 """
-from ..types import Color, Layout, Style, GeoNotes, Variable
+from ..types import Color, Layout, Style, Variable
 from ..utils import arg_or_default
-from ..theme import ThemeManager
 from ._label import Label
 from ._frame import Frame
 from copy import copy
@@ -146,27 +145,13 @@ class Button(Frame):
         else:
             raise ValueError("Invalid label sync type: ", style_type)
 
-    def notify(
-            self,
-            event: ThemeManager.NotifyEvent | Style.NotifyEvent,
-            info: tp.Any = ...
-    ) -> None:
-        match event:
-            case GeoNotes.SetActive:
-                # catch setActive event for handling the command
-                if not self.is_active and self._command is not ...:
-                    self._command()
-
-                super().notify(event, info)
-
-            case _:
-                super().notify(event, info)
-
     def _on_hover(self) -> None:
         """
         set the label to hover
         """
         self._label.set_hover(False)
+
+        super()._on_hover()
 
     def _on_active(self) -> None:
         """
@@ -174,8 +159,20 @@ class Button(Frame):
         """
         self._label.set_active(False)
 
-    def _on_no_active_hover(self) -> None:
+        # execute assigned command
+        if self._command is not ...:
+            self._command()
+
+        super()._on_active()
+
+    def _on_no_active_hover(
+            self,
+            from_active: bool = False,
+            from_hover: bool = False
+    ) -> None:
         """
         set the label to no active-hover
         """
         self._label.set_no_hover_active(False)
+
+        super()._on_no_active_hover(from_active, from_hover)
