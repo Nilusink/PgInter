@@ -7,7 +7,14 @@ _entry.py
 Author:
 Nilusink
 """
-from ..types import Color, FrameBind, Style, KeyboardNotifyEvent, StringVar
+from ..types import (
+    KeyboardNotifyEvent,
+    FrameBind,
+    StringVar,
+    Scheme,
+    Style,
+    Color
+)
 from ..theme import ThemeManager
 from ._label import Label
 from ._frame import Frame
@@ -19,8 +26,14 @@ import time
 class Entry(Frame):
     _label: Label = ...
     _string_var: StringVar = ...
-    _placeholder_text: str
-    _placeholder_color: Color
+    _placeholder_text: str = ...
+    _placeholder_color: Color = ...
+    _cursor_pos: int = 0
+    _max_length: int | None = None
+    _allowed: str = ...
+    _scheme: Scheme
+    _f_lower: bool = False
+    _f_upper: bool = False
 
     def __init__(
             self,
@@ -34,11 +47,25 @@ class Entry(Frame):
             placeholder_color: Color = ...,
             bg: Color = ...,
             fg: Color = ...,
+            valid_symbols: str = ...,
+            scheme: Scheme = ...,
+            force_uppercase: bool = False,
+            force_lowercase: bool = False,
+            max_length: int | None = None,
             **kwargs
     ) -> None:
         """
         A widget where you can enter text
+
+        :param valid_symbols: if given, the entry only allows the given
+        characters. If scheme is given, this option will be ignored
         """
+        self._f_lower = force_lowercase
+        self._f_upper = force_uppercase
+        self._max_length = max_length
+        self._allowed = valid_symbols
+        self._scheme = scheme
+
         if placeholder_text is ...:
             placeholder_text = "Entry"
 
@@ -213,9 +240,16 @@ class Entry(Frame):
             center_x = self._x + x + bg_width / 2
             center_y = self._y + y + bg_height / 2
 
+            cursor_text = self._label._font.render(
+                self._string_var.get()[:self._cursor_pos],
+                True,
+                current_style.color.irgba
+            )
+            x_off = cursor_text.get_size()[0]
+
             # center label on frame center
             label_end = (
-                center_x + (0 if is_placeholder else width / 2),
+                center_x - (0 if is_placeholder else width / 2) + x_off,
                 center_y - height / 2
             )
 
@@ -236,20 +270,77 @@ class Entry(Frame):
     ) -> None:
         match event:
             case KeyboardNotifyEvent.key_down:
+                print(info)
                 if info.key == pg.K_BACKSPACE:
-                    self._string_var.set(self._string_var.get()[:-1])
+                    if len(self._string_var.get()) > 0:
+                        prev_string = self._string_var.get()
+                        self._string_var.set(
+                            prev_string[:self._cursor_pos-1]
+                            + prev_string[self._cursor_pos:]
+                        )
+
+                        if self._cursor_pos >= 0:
+                            self._cursor_pos -= 1
 
                 elif info.key == pg.K_RETURN:
                     self.root.set_focus()
                     self._execute_event(FrameBind.key_return)
 
+                elif info.key == pg.K_LEFT:
+                    if self._cursor_pos >= 0:
+                        self._cursor_pos -= 1
+
+                elif info.key == pg.K_RIGHT:
+                    if self._cursor_pos < len(self._string_var.get()):
+                        self._cursor_pos += 1
+
                 # if none of the above apply and a unicode character is
                 # present, add it to the string
                 elif info.unicode:
-                    self._string_var += info.unicode
+                    # force capitalize - lower the character
+                    if self._f_upper:
+                        info.unicode = info.unicode.upper()
+
+                    if self._f_lower:
+                        info.unicode = info.unicode.lower()
+
+                    # check max length
+                    if self._max_length is not None and\
+                            self._cursor_pos >= self._max_length:
+                        return
+
+                    # check valid symbols
+                    if self._allowed is not ... and\
+                            info.unicode not in self._allowed\
+                            and self._scheme is ...:
+                        return
+
+                    if self._scheme is not ...:
+                        is_valid, punct = self._scheme.validate(
+                            self._cursor_pos,
+                            info.unicode
+                        )
+                        if is_valid:
+                            if punct is not None:
+                                info.unicode = punct
+
+                        else:
+                            return
+
+                    # insert character at cursor position
+                    prev_string = self._string_var.get()
+                    self._string_var.set(
+                        prev_string[:self._cursor_pos]
+                        + info.unicode
+                        + prev_string[self._cursor_pos:]
+                    )
+                    self._cursor_pos += 1
 
             case _:
                 super().notify(event, info)
 
-# TODO: cursor movement
+
+# TODO: clickable cursor
+# TODO: enabled / disabled
+# TODO: scheme (separators)
 # TODO: not shown if no height | width | sticky is given
