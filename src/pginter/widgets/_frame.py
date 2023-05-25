@@ -363,8 +363,6 @@ class Frame(GeometryManager):
         """
         get the frames size (including children)
         """
-        # print(f"getting frame size: {self.width, self.height}")
-
         # width
         width = self._width if self._width_configured else \
             self.assigned_width

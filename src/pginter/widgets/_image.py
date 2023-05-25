@@ -78,7 +78,19 @@ class ImageFrame(Frame):
         if height <= 0:
             height = image_height
 
+        # center image
+        pos = (
+            self.assigned_width / 2 - width / 2,
+            self.assigned_height / 2 - height / 2
+        )
+
+        pos = (
+            self._x + (pos[0] if pos[0] >= 0 else 0),
+            self._y + (pos[1] if pos[1] >= 0 else 0)
+        )
+
         now_image = pi_image_to_surface(self._img.resize((width, height)))
-        surface.blit(now_image, (self._x, self._y))
+        surface.blit(now_image, pos)
 
 # TODO: more functionality
+# TODO: fix scaling
