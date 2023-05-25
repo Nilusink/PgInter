@@ -22,7 +22,7 @@
     "active_fg": ["#fff", "#000"]
   },
   "entry": {
-    "bg": "#4c4c4c",
+    "bg": [50, 50, 50, 100],
     "fg": ["#fff", "#000"],
     "border_color": "#777",
     "hover_border_color": "#888",

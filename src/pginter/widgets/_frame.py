@@ -14,6 +14,16 @@ from ..types import *
 import typing as tp
 import pygame as pg
 
+# try importing pil. The user shouldn't be forced to install pil, but
+# will get an error if they try to use the image widget without having it
+# installed
+try:
+    from PIL import Image
+    PIL_EXISTS = True
+
+except ImportError:
+    PIL_EXISTS = False
+
 
 if tp.TYPE_CHECKING:
     from .._pg_root import PgRoot
@@ -41,6 +51,17 @@ def display_configurify(key: str) -> str:
     return key
 
 
+def pi_image_to_surface(pil_image):
+    """
+    helper function for converting pillow images to pygame images
+    """
+    return pg.image.fromstring(
+        pil_image.tobytes(),
+        pil_image.size,
+        pil_image.mode
+    ).convert()
+
+
 class _Bind(tp.TypedDict):
     id: int
     event: FrameBind
@@ -60,6 +81,8 @@ class Frame(GeometryManager):
     _x: int = -1
     _y: int = -1
 
+    _image: Image.Image
+
     def __init__(
             self,
             parent: tp.Union["Frame", tp.Any],
@@ -76,6 +99,7 @@ class Frame(GeometryManager):
             border_top_right_radius: int = ...,
             border_width: int = ...,
             border_color: Color = ...,
+            image: Image.Image = ...,
             margin: int = ...,
             padding: int = ...,
             min_width: int = ...,
@@ -96,6 +120,15 @@ class Frame(GeometryManager):
         :param border_width: how thick the border of the box should be
         :param border_color: the color of the border
         """
+        if image is not ... and not PIL_EXISTS:
+            raise ImportError(
+                "PIL needs to be installed to use the Image widget.\n"
+                "\tto install PIL, use\n"
+                "\t\t\"pip install pillow\""
+            )
+
+        self._image = image
+
         self._binds = []
 
         self.style = style if style is not ... else Style()
@@ -425,6 +458,40 @@ class Frame(GeometryManager):
             border_bottom_left_radius=current_style.borderBottomLeftRadius,
             border_bottom_right_radius=current_style.borderBottomRightRadius
         )
+
+        if self._image is not ...:
+            width, height = self.get_size()
+            image_width, image_height = self._image.size
+
+            # try to reserve aspect angle
+            if width <= 0 < height:
+                width = int((image_width / image_height) * height)
+
+            if height <= 0 < width:
+                height = int((image_height / image_width) * width)
+
+            # if no with or height has yet been set, clone the
+            # original image's size
+            if width <= 0:
+                width = image_width
+
+            if height <= 0:
+                height = image_height
+
+            # center image
+            pos = (
+                self.assigned_width / 2 - width / 2,
+                self.assigned_height / 2 - height / 2
+            )
+
+            pos = (
+                pos[0] if pos[0] >= 0 else 0,
+                pos[1] if pos[1] >= 0 else 0
+            )
+            now_image = pi_image_to_surface(
+                self._image.resize((width, height))
+            )
+            _surface.blit(now_image, pos)
 
         if current_style.borderWidth > 0:
             # print(f"drawing border, {current_style.borderColor}")
