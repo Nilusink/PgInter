@@ -8,14 +8,10 @@ Author:
 Nilusink
 """
 from ..types import (
-    KeyboardNotifyEvent,
-    FrameBind,
-    StringVar,
-    Scheme,
-    Style,
-    Color
+    GeoNotes, KeyboardNotifyEvent, FrameBind, StringVar, Scheme, Style, Color,
 )
 from ..theme import ThemeManager
+from contextlib import suppress
 from ._label import Label
 from ._frame import Frame
 import typing as tp
@@ -276,20 +272,57 @@ class Entry(Frame):
     ) -> None:
         match event:
             case KeyboardNotifyEvent.key_down:
-                print(info)
                 if info.key == pg.K_BACKSPACE:
-                    if len(self._string_var.get()) > 0:
+                    s_len = len(self._string_var.get())
+
+                    # deletion if a scheme is given
+                    if self._scheme is not ...:
+                        if s_len > 0:
+                            if self._cursor_pos < s_len:
+                                # split string at the cursor and replace
+                                # the next character with a space character
+                                prev_string = self._string_var.get()
+                                self._string_var.set(
+                                    prev_string[
+                                        :self._cursor_pos
+                                    ]
+                                    + " "
+                                    + prev_string[self._cursor_pos + 1:]
+                                )
+
+                            else:
+                                # split the string at the cursor and delete
+                                # the next character
+                                prev_string = self._string_var.get()
+                                self._string_var.set(
+                                    prev_string[
+                                        :self._cursor_pos - 1
+                                    ]
+                                    + prev_string[self._cursor_pos:]
+                                )
+
+                                # de-increment cursor (if not already at 0)
+                                if self._cursor_pos >= 0:
+                                    self._cursor_pos -= 1
+
+                        return
+
+                    # normal deletion
+                    if s_len > 0:
+                        # split the string at the cursor and delete
+                        # the next character
                         prev_string = self._string_var.get()
                         self._string_var.set(
                             prev_string[:self._cursor_pos-1]
                             + prev_string[self._cursor_pos:]
                         )
 
+                        # de-increment cursor (if not already at 0)
                         if self._cursor_pos >= 0:
                             self._cursor_pos -= 1
 
                 elif info.key == pg.K_RETURN:
-                    self.root.set_focus()
+                    self.root.set_focus(self.root)
                     self._execute_event(FrameBind.key_return)
 
                 elif info.key == pg.K_LEFT:
@@ -303,6 +336,10 @@ class Entry(Frame):
                 # if none of the above apply and a unicode character is
                 # present, add it to the string
                 elif info.unicode:
+                    override = False
+                    set_character = None
+                    next_valid = False
+
                     # force capitalize - lower the character
                     if self._f_upper:
                         info.unicode = info.unicode.upper()
@@ -322,25 +359,56 @@ class Entry(Frame):
                         return
 
                     if self._scheme is not ...:
-                        is_valid, punct = self._scheme.validate(
-                            self._cursor_pos,
-                            info.unicode
-                        )
-                        if is_valid:
-                            if punct is not None:
-                                info.unicode = punct
+                        override = True
+                        try:
+                            # check current character
+                            is_valid, punct = self._scheme.validate(
+                                self._cursor_pos,
+                                info.unicode
+                            )
 
-                        else:
+                            # check next character
+                            with suppress(IndexError):
+                                next_valid, _ = self._scheme.validate(
+                                    self._cursor_pos + 1, info.unicode
+                                )
+
+                            if is_valid:
+                                if punct is not None:
+                                    set_character = punct
+
+                            else:
+                                return
+
+                        except IndexError:
                             return
 
                     # insert character at cursor position
                     prev_string = self._string_var.get()
                     self._string_var.set(
                         prev_string[:self._cursor_pos]
+                        + (set_character if set_character is not None else "")
                         + info.unicode
-                        + prev_string[self._cursor_pos:]
+                        + prev_string[self._cursor_pos+override:]
                     )
-                    self._cursor_pos += 1
+                    self._cursor_pos += 1 + (
+                            next_valid and set_character is not None
+                    )
+
+            case GeoNotes.SetActive:
+                new_index = self._label.get_index_on_position(
+                    info[0] - self._x
+                )
+
+                if 0 <= new_index <= len(self._string_var.get()):
+                    self._cursor_pos = new_index
+
+                print("index: ", new_index)
+
+                if self._notify_child_active_hover(info):
+                    self.set_no_hover_active()
+                else:
+                    self.set_active()
 
             case _:
                 super().notify(event, info)
@@ -348,5 +416,4 @@ class Entry(Frame):
 
 # TODO: clickable cursor
 # TODO: enabled / disabled
-# TODO: scheme (separators)
 # TODO: not shown if no height | width | sticky is given

@@ -39,15 +39,24 @@ class Scheme:
                             and scheme[i + additional + 1] == ">":
                         break
 
+                    i += 1
+
+                else:
+                    continue
+
                 parsed_scheme.append(
-                    scheme[i+2:i+(additional-2)]
+                    f"<|{scheme[i+1:i+additional]}|>"
                 )
+
+                i += additional + 2
+                continue
 
             parsed_scheme.append(now)
             i += 1
 
         new_instance = cls()
-        new_instance._current_scheme = scheme
+        new_instance._current_scheme = parsed_scheme
+
         return new_instance
 
     def get(self) -> str:
@@ -101,7 +110,7 @@ class Scheme:
         """
         all numbers from 0 to 10 (0123456789)
         """
-        self._current_scheme.append("n")
+        self._current_scheme.append("d")
         return self
 
     def d(self) -> tp.Self:
@@ -194,7 +203,7 @@ class Scheme:
             case "a":
                 return int(to_check in string.ascii_letters), None
 
-            case "n":
+            case "d":
                 return int(to_check in string.digits), None
 
             case "o":
@@ -211,3 +220,6 @@ class Scheme:
 
             case _:
                 raise ValueError(f"Invalid scheme: {self.get()}")
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}: {self.get()}>"

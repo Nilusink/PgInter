@@ -162,3 +162,68 @@ class Label(Frame):
 
             case GeoNotes.SetActive:
                 self.parent.set_active(True)
+
+    def get_index_on_position(self, x_position: int) -> int:
+        """
+        calculates the character clicked (with x position)
+        """
+        text = self._text_var.get()
+        whole_text = self._font.render(text,  True, (0, 0, 0, 0))
+        whole_width = whole_text.get_width()
+
+        # estimate the position by pretending every character has the
+        # same width
+        if whole_width != 0:
+            i_estimated = int(round((x_position / whole_width) * len(text), 0))
+
+        else:
+            i_estimated = 0
+
+        # check the exact position
+        r_text = self._font.render(text[:i_estimated],  True, (0, 0, 0, 0))
+        exact_x = r_text.get_size()[0]
+        off = exact_x - x_position
+
+        if off > 0:
+            last = off
+
+            while True:
+                i_estimated += 1
+                r_text = self._font.render(
+                    text[:i_estimated], True, (0, 0, 0, 0)
+                    )
+                exact_x = r_text.get_size()[0]
+                new = exact_x - x_position
+
+                if new < last:
+                    i_estimated -= 1
+                    break
+
+                if i_estimated > len(text):
+                    break
+
+                last = new
+
+        elif off < 0:
+            last = off
+
+            while True:
+                i_estimated += 1
+                r_text = self._font.render(
+                    text[:i_estimated], True, (0, 0, 0, 0)
+                )
+                exact_x = r_text.get_size()[0]
+                new = exact_x - x_position
+
+                if new < last:
+                    i_estimated -= 1
+                    break
+
+                if i_estimated == 0:
+                    break
+
+                last = new
+
+        print(f"offset: {off=}")
+
+        return i_estimated
