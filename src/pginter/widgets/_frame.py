@@ -52,7 +52,7 @@ def display_configurify(key: str) -> str:
     return key
 
 
-def pi_image_to_surface(pil_image):
+def pil_image_to_surface(pil_image):
     """
     helper function for converting pillow images to pygame images
     """
@@ -60,7 +60,7 @@ def pi_image_to_surface(pil_image):
         pil_image.tobytes(),
         pil_image.size,
         pil_image.mode
-    ).convert()
+    ).convert_alpha()
 
 
 class _Bind(tp.TypedDict):
@@ -83,6 +83,8 @@ class Frame(GeometryManager):
     _y: int = -1
 
     _image: Image.Image
+
+    show_wireframe: bool = False
 
     def __init__(
             self,
@@ -121,6 +123,9 @@ class Frame(GeometryManager):
         :param border_width: how thick the border of the box should be
         :param border_color: the color of the border
         """
+        # inherit show_wireframe from parent
+        self.show_wireframe = parent.show_wireframe
+
         if image is not ... and not PIL_EXISTS:
             raise ImportError(
                 "PIL needs to be installed to use the Image widget.\n"
@@ -216,6 +221,26 @@ class Frame(GeometryManager):
         if height is not ... and self.style.height is ...:
             self.style.height = height
 
+        # assign to properties (for geo-manager)
+        if self.style.width is not ...:
+            self.width = self.style.width
+
+        if self.style.height is not ...:
+            self.height = self.style.height
+
+        # link the style parameters to the geo-manager properties
+        def update_width(*_):
+            if self.style.width is not ...:
+                self.width = self.style.width
+
+        def update_height(*_):
+            if self.style.height is not ...:
+                self.height = self.style.height
+
+        self.style.notify_on("width", update_width)
+        self.style.notify_on("height", update_height)
+
+        # more arguments
         if self.style.backgroundColor is ...:
             self.style.backgroundColor = self.theme.frame.bg1 if bg is ... else bg
             if isinstance(self.__parent, Frame) and \
@@ -499,7 +524,7 @@ class Frame(GeometryManager):
                 pos[0] if pos[0] >= 0 else 0,
                 pos[1] if pos[1] >= 0 else 0
             )
-            now_image = pi_image_to_surface(
+            now_image = pil_image_to_surface(
                 self._image.resize((width, height))
             )
             _surface.blit(now_image, pos)
@@ -521,8 +546,66 @@ class Frame(GeometryManager):
         for child, params in self._child_params:
             child.draw(_surface)
 
-        # draw
+        # draw children to surface
         surface.blit(_surface, (self._x, self._y))
+
+        # draw wireframe
+        if self.show_wireframe:
+            font = pg.font.SysFont(None, 20)
+            t = font.render(self.__class__.__name__, True, (255, 0, 0))
+            surface.blit(t, (self._x, self._y - t.get_height()))
+
+            if self._last_rows is not ...:
+                for row in self._last_rows:
+                    pg.draw.line(
+                        surface,
+                        (255, 0, 0, 100),
+                        (self._x, self._y + row["y_start"]),
+                        (self._x + width, self._y + row["y_start"])
+                    )
+                    pg.draw.line(
+                        surface,
+                        (255, 0, 0, 100),
+                        (self._x, self._y + row["y_start"] + row["height"]),
+                        (self._x + width, self._y + row["y_start"] + row["height"])
+                    )
+
+            if self._last_columns is not ...:
+                for column in self._last_columns:
+                    pg.draw.line(
+                        surface,
+                        (255, 0, 0, 100),
+                        (self._x + column["x_start"], self._y),
+                        (self._x + column["x_start"], self._y + height)
+                    )
+                    pg.draw.line(
+                        surface,
+                        (255, 0, 0, 100),
+                        (self._x + column["x_start"] + column["width"], self._y),
+                        (self._x + column["x_start"] + column["width"], self._y + height)
+                    )
+
+            is_debug = hasattr(self, "debug_this")
+            col = (255, 255 * (not is_debug), 255 * is_debug)
+            pg.draw.rect(
+                surface,
+                col,
+                pg.Rect(
+                    (self._x, self._y),
+                    (width, height)
+                ),
+                1
+            )
+
+            if is_debug:
+                w_text = font.render(str(width), True, col)
+                surface.blit(
+                    w_text,
+                    (
+                        (self._x + width / 2) - w_text.get_width() / 2,
+                        self._y
+                    )
+                )
 
     def place(
             self,

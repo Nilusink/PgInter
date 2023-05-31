@@ -39,6 +39,15 @@ class GeometryManager(SupportsChildren):
     _is_active: bool = False
     _is_hover: bool = False
 
+    _last_rows: list[dict[
+        str,
+        list[tuple[tp.Any, BetterDict, bool]] | float
+    ]] = ...
+    _last_columns: list[dict[
+        str,
+        list[tuple[tp.Any, BetterDict, bool]] | float
+    ]] = ...
+
     def __init__(
             self,
             layout: Layout = ...,
@@ -404,10 +413,16 @@ class GeometryManager(SupportsChildren):
                 if not self._width_configured:
                     self._width = total_x
 
+                    if hasattr(self, "debug_this"):
+                        print("setting width: ", total_x)
+
                 else:
                     total_x = self._width
     
                 if not self._height_configured:
+                    if hasattr(self, "debug_this"):
+                        print("setting height: ", total_y)
+
                     self._height = total_y
 
                 else:
@@ -567,32 +582,51 @@ class GeometryManager(SupportsChildren):
                             columns[c]["max_size"] = x
 
                 # calculate the container size
-                width, height = self.assigned_width, self.assigned_height
+                columns_width, rows_height = self.assigned_width, self.assigned_height
 
                 # only subtract rows that don't have a weight
                 min_width = sum([c["max_size"] for c in columns])
                 min_height = sum([r["max_size"] for r in rows])
 
+                # if children exist, set min size
                 if len(columns) + len(rows) > 0:
-                    if width == 0 or height == 0 and not\
+                    if columns_width == 0 or rows_height == 0 and not\
                             self._width_configured:
-                        self._width = min_width
 
-                    if width == 0 or height == 0 and not\
-                            self._height_configured:
-                        self._height = min_height
+                        # only set if child requires greater width
+                        if min_width > self._width:
+                            if hasattr(self, "debug_this"):
+                                print(
+                                    "setting width (children min): ", min_width
+                                    )
+                            self._width = min_width
 
+                    if columns_width == 0\
+                            or rows_height == 0\
+                            and not self._height_configured:
+
+                        # only set if child requires greater height
+                        if min_height > self._height:
+                            if hasattr(self, "debug_this"):
+                                print(
+                                    "setting height (children min): ",
+                                    min_height
+                                    )
+                            self._height = min_height
+
+                # if a size has been set by the user, overwrite the calculated
+                # size
                 if self._width_configured:
-                    width = self._width
+                    columns_width = self._width
 
                 if self._height_configured:
-                    height = self.height
+                    rows_height = self.height
 
                 # assign extra space
-                extra_width = width - sum(
+                extra_width = columns_width - sum(
                     [c["max_size"] for c in columns if c["weight"] == 0]
                 )
-                extra_height = height - sum(
+                extra_height = rows_height - sum(
                     [r["max_size"] for r in rows if r["weight"] == 0]
                 )
 
@@ -612,8 +646,8 @@ class GeometryManager(SupportsChildren):
                         # assign either the minimum size or the
                         # calculated dynamic one
                         w_size = (
-                                (rows[r]["weight"] / total_row_weight)
-                                * extra_height
+                            (rows[r]["weight"] / total_row_weight)
+                            * extra_height
                         ).__floor__()
                         rows[r]["height"] = w_size
 
@@ -621,26 +655,30 @@ class GeometryManager(SupportsChildren):
                         [prev_row["height"] for prev_row in rows[:r]]
                     )
 
-                    for c in range(len(columns)):
-                        if total_column_weight == 0:
-                            columns[c]["width"] = 0
+                for c in range(len(columns)):
+                    if total_column_weight == 0:
+                        columns[c]["width"] = 0
 
-                        else:
-                            # assign either the minimum size or the
-                            # calculated dynamic one
-                            w_size = (
-                                    (
-                                            columns[c]["weight"]
-                                            / total_column_weight
-                                    )
-                                    * extra_width
-                            ).__floor__()
-                            columns[c]["width"] = w_size
+                    else:
+                        # assign either the minimum size or the
+                        # calculated dynamic one
+                        w_size = (
+                            (
+                                columns[c]["weight"]
+                                / total_column_weight
+                            )
+                            * extra_width
+                        ).__floor__()
+                        columns[c]["width"] = w_size
 
-                        columns[c]["x_start"] = self.layout_params.padding / 2\
-                            + sum(
-                            [prev_col["width"] for prev_col in columns[:c]]
-                        )
+                    columns[c]["x_start"] = self.layout_params.padding / 2\
+                        + sum(
+                        [prev_col["width"] for prev_col in columns[:c]]
+                    )
+
+                if hasattr(self, "debug_this"):
+                    print(self.width, extra_width, min_width)
+                    print([f"width: {c['width']}" for c in columns])
 
                 # place children
                 for child, params in self._child_params:
@@ -652,11 +690,11 @@ class GeometryManager(SupportsChildren):
                     sticky = params.sticky
                     margin = params.margin
 
-                    width = sum([
+                    columns_width = sum([
                         columns[c]["width"] for c in
                         range(column, column + params.columnspan)
                     ])
-                    height = sum([
+                    rows_height = sum([
                         rows[r]["height"] for r in
                         range(row, row + params.rowspan)
                     ])
@@ -664,8 +702,15 @@ class GeometryManager(SupportsChildren):
                     x = columns[column]["x_start"]
                     y = rows[row]["y_start"]
 
-                    x_diff = width - size[0]
-                    y_diff = height - size[1]
+                    x_diff = columns_width - size[0]
+                    y_diff = rows_height - size[1]
+
+                    # offsets for width / height configured
+                    x_position_offset = 0
+                    y_position_offset = 0
+
+                    if hasattr(self, "debug_this"):
+                        print("cw: ", columns_width, params.columnspan)
 
                     # assign stickiness
                     if not child._width_configured:
@@ -677,6 +722,11 @@ class GeometryManager(SupportsChildren):
 
                         child.assigned_width = size[0]
 
+                    else:
+                        # if width is configured, center the widget based
+                        # on its configured width
+                        x_position_offset += x_diff / 2 - params.margin
+
                     if not child._height_configured:
                         if "n" in sticky:
                             size[1] += (y_diff / 2) - params.margin
@@ -686,7 +736,18 @@ class GeometryManager(SupportsChildren):
 
                         child.assigned_height = size[1]
 
-                    child.set_position(x + margin, y + margin)
+                    else:
+                        # if height is configured, center the widget based
+                        # on its configured height
+                        y_position_offset += y_diff / 2 - params.margin
+
+                    child.set_position(
+                        x + margin + max([x_position_offset, 0]),
+                        y + margin + max([y_position_offset, 0])
+                    )
+
+                self._last_rows = rows
+                self._last_columns = columns
 
             case _:
                 raise ValueError(f"Invalid geometry type: {self._layout}")

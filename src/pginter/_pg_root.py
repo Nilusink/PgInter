@@ -48,6 +48,8 @@ class PgRoot(GeometryManager):
     _last_it_call: float
     _tpool: Pool
 
+    show_wireframe: bool = False
+
     def __init__(
             self,
             title: str = ...,
