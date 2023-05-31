@@ -478,6 +478,33 @@ class Frame(GeometryManager):
 
         # check if the frame even exists
         if width <= 0 or height <= 0:
+            # since the image doesn't affect the calculate_size function,
+            # try to set the frames size through this piece of sh- code
+            if self._image is not ...:
+                width, height = self.get_size()
+                image_width, image_height = self._image.size
+
+                # try to reserve aspect angle
+                if width <= 0 < height:
+                    width = int((image_width / image_height) * height)
+
+                if height <= 0 < width:
+                    height = int((image_height / image_width) * width)
+
+                # if no with or height has yet been set, clone the
+                # original image's size
+                if width <= 0:
+                    width = image_width
+
+                if height <= 0:
+                    height = image_height
+
+                if width > self._width:
+                    self.width = width
+
+                if height > self._height:
+                    self.height = height
+
             return
 
         _surface = pg.Surface((width, height), pg.SRCALPHA)
@@ -500,6 +527,9 @@ class Frame(GeometryManager):
             image_width, image_height = self._image.size
 
             # try to reserve aspect angle
+            if hasattr(self, "debug_this"):
+                print("size: ", width, height)
+
             if width <= 0 < height:
                 width = int((image_width / image_height) * height)
 
@@ -513,6 +543,12 @@ class Frame(GeometryManager):
 
             if height <= 0:
                 height = image_height
+
+            if width >= self._width:
+                self.width = width
+
+            if height >= self._height:
+                self.height = height
 
             # center image
             pos = (
@@ -551,6 +587,7 @@ class Frame(GeometryManager):
 
         # draw wireframe
         if self.show_wireframe:
+            # font for debugging
             font = pg.font.SysFont(None, 20)
             t = font.render(self.__class__.__name__, True, (255, 0, 0))
             surface.blit(t, (self._x, self._y - t.get_height()))
@@ -585,6 +622,7 @@ class Frame(GeometryManager):
                         (self._x + column["x_start"] + column["width"], self._y + height)
                     )
 
+            # draw a different colored rectangle around the frame
             is_debug = hasattr(self, "debug_this")
             col = (255, 255 * (not is_debug), 255 * is_debug)
             pg.draw.rect(
@@ -597,6 +635,7 @@ class Frame(GeometryManager):
                 1
             )
 
+            # display width if debug_this is enabled
             if is_debug:
                 w_text = font.render(str(width), True, col)
                 surface.blit(
