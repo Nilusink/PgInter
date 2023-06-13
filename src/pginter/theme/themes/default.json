@@ -24,7 +24,7 @@
   "entry": {
     "bg": [50, 50, 50, 100],
     "fg": ["#fff", "#000"],
-    "border_color": "#777",
+    "border_color": ["#777", "#eee"],
     "hover_border_color": "#888",
     "active_border_color": "#aaa",
     "border_width": 3

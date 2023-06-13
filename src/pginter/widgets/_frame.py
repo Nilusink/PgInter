@@ -19,7 +19,7 @@ import pygame as pg
 # installed
 try:
     # noinspection PyUnresolvedReferences
-    from PIL import Image
+    from PIL import Image, ImageDraw
     PIL_EXISTS = True
 
 except ImportError:
@@ -31,6 +31,49 @@ if tp.TYPE_CHECKING:
 
 
 RES_T = tp.TypeVar("RES_T")
+
+
+# utility functions
+def add_corners(
+        im: Image,
+        ulr: int,
+        urr: int,
+        llr: int,
+        lrr: int
+) -> Image:
+    alpha = Image.new('L', im.size, 255)
+    w, h = im.size
+
+    # upper left corner
+    ulc = Image.new("L", (ulr * 2, ulr * 2), 0)
+    draw = ImageDraw.Draw(ulc)
+    draw.ellipse((0, 0, ulr * 2 - 1, ulr * 2 - 1), fill=255)
+    ulc = ulc.crop((0, 0, ulr, urr))
+    alpha.paste(ulc, (0, 0))
+
+    # upper right corner
+    urc = Image.new("L", (urr * 2, urr * 2), 0)
+    draw = ImageDraw.Draw(urc)
+    draw.ellipse((0, 0, urr * 2 - 1, urr * 2 - 1), fill=255)
+    urc = urc.crop((urr, 0, 2 * urr, urr))
+    alpha.paste(urc, (w - urr, 0))
+
+    # lower left radius
+    llc = Image.new("L", (llr * 2, llr * 2), 0)
+    draw = ImageDraw.Draw(llc)
+    draw.ellipse((0, 0, llr * 2 - 1, llr * 2 - 1), fill=255)
+    llc = llc.crop((0, llr, llr, llr * 2))
+    alpha.paste(llc, (0, h - llr))
+
+    # lower right radius
+    lrc = Image.new("L", (lrr * 2, lrr * 2), 0)
+    draw = ImageDraw.Draw(lrc)
+    draw.ellipse((0, 0, lrr * 2 - 1, lrr * 2 - 1), fill=255)
+    lrc = lrc.crop((lrr, lrr, lrr * 2, lrr * 2))
+    alpha.paste(lrc, (w - lrr, h - lrr))
+
+    im.putalpha(alpha)
+    return im
 
 
 def display_configurify(key: str) -> str:
@@ -560,9 +603,23 @@ class Frame(GeometryManager):
                 pos[0] if pos[0] >= 0 else 0,
                 pos[1] if pos[1] >= 0 else 0
             )
-            now_image = pil_image_to_surface(
-                self._image.resize((width, height))
+
+            # resize image
+            tmp_image = self._image.resize((width, height))
+
+            # add round edges
+            tmp_image = add_corners(
+                tmp_image,
+                current_style.borderTopLeftRadius,
+                current_style.borderTopRightRadius,
+                current_style.borderBottomLeftRadius,
+                current_style.borderBottomRightRadius
             )
+
+            # convert to pygame image
+            now_image = pil_image_to_surface(tmp_image)
+
+            # draw image to surface
             _surface.blit(now_image, pos)
 
         if current_style.borderWidth > 0:
