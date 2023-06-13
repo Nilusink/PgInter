@@ -10,6 +10,7 @@ Nilusink
 from ._geo_manager import GeometryManager
 from concurrent.futures import Future
 from ..theme import ThemeManager
+from ..utils import merge_alphas
 from ..types import *
 import typing as tp
 import pygame as pg
@@ -41,6 +42,16 @@ def add_corners(
         llr: int,
         lrr: int
 ) -> Image:
+    """
+    adds corners to an image
+
+    :param im: input image
+    :param ulr: upper left radius
+    :param urr: upper right radius
+    :param llr: lower left radius
+    :param lrr: lower right radius
+    :returns: the converted image
+    """
     alpha = Image.new('L', im.size, 255)
     w, h = im.size
 
@@ -72,7 +83,9 @@ def add_corners(
     lrc = lrc.crop((lrr, lrr, lrr * 2, lrr * 2))
     alpha.paste(lrc, (w - lrr, h - lrr))
 
-    im.putalpha(alpha)
+    # apply the corner radius, keeping the image's alpha (if already present)
+    *_, ia = im.split()  # extract alpha channel from image
+    im.putalpha(merge_alphas(alpha, ia, min))
     return im
 
 
