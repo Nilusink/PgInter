@@ -71,6 +71,7 @@ class Frame(GeometryManager):
     active_style: Style = ...
     _x: int = -1
     _y: int = -1
+    _last_size: tuple[int, int] = ...
 
     _image: Image.Image
 
@@ -426,6 +427,10 @@ class Frame(GeometryManager):
         """
         draw the frame
         """
+        if hasattr(self, "debug_this"):
+            print("draw")
+        requires_recalc = False
+
         current_style = self.style
 
         if self.is_hover:
@@ -452,6 +457,15 @@ class Frame(GeometryManager):
             self.unset_width()
 
         width, height = self.get_size()
+        if self._last_size is not ...:
+            if self._last_size[0] != width \
+                    or self._last_size[1] != height:
+                requires_recalc = True
+
+        else:
+            requires_recalc = True
+
+        self._last_size = (width, height)
 
         # check if the frame even exists
         if width <= 0 or height <= 0:
@@ -482,6 +496,7 @@ class Frame(GeometryManager):
                 if height > self._height:
                     self.height = height
 
+            self.root.notify(GeoNotes.RequireRecalc)
             return
 
         _surface = pg.Surface((width, height), pg.SRCALPHA)
@@ -508,11 +523,9 @@ class Frame(GeometryManager):
                 print("size: ", width, height)
 
             if width <= 0 < height:
-                print("w0")
                 width = int((image_width / image_height) * height)
 
             if height <= 0 < width:
-                print("h0")
                 height = int((image_height / image_width) * width)
 
             # if no with or height has yet been set, clone the
@@ -632,6 +645,9 @@ class Frame(GeometryManager):
                         self._y
                     )
                 )
+
+        if requires_recalc:
+            self.root.notify(GeoNotes.RequireRecalc)
 
     def place(
             self,

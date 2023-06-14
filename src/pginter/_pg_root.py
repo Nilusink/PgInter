@@ -43,6 +43,7 @@ class PgRoot(GeometryManager):
     _bg_configured: bool = False
     _mouse_pos: tuple[int, int] = ...
     _max_framerate: int = ...
+    _requires_recalc: bool = True
 
     __timeouts: list[_TimeoutCandidate]
     _last_it_call: float
@@ -186,6 +187,9 @@ class PgRoot(GeometryManager):
                 if not self._bg_configured:
                     self._bg = self.theme.root.bg.rgba
 
+            case GeoNotes.RequireRecalc:
+                self._requires_recalc = True
+
     # pygame stuff
     def _event_handler(self) -> None:
         """
@@ -210,7 +214,8 @@ class PgRoot(GeometryManager):
                             event
                         )
 
-                # case pg.VIDEORESIZE:  # window size changed
+                case pg.VIDEORESIZE:  # window size changed
+                    self._requires_recalc = True
                 #     width, height = event.size
                 #
                 #     print("updating size: ", (width, height), "\t", self._min_size)
@@ -258,13 +263,16 @@ class PgRoot(GeometryManager):
         """
         update the screen
         """
-        self.__background.fill(self._bg)
+        if self._requires_recalc:
+            self._requires_recalc = False
 
-        self.calculate_geometry()
-        for child, params in self._child_params:
-            child.draw(self.__background)
+            self.__background.fill(self._bg)
 
-        pg.display.flip()
+            self.calculate_geometry()
+            for child, params in self._child_params:
+                child.draw(self.__background)
+
+            pg.display.flip()
 
     def mainloop(self):
         """

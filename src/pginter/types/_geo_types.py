@@ -20,3 +20,5 @@ class GeoNotes(Enum):
     SetNormal = 0
     SetHover = 1
     SetActive = 2
+    RequireRedraw = 3
+    RequireRecalc = 4
