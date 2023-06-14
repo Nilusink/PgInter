@@ -7,8 +7,6 @@ a few generic useful functions
 Author:
 Nilusink
 """
-from PIL import Image
-from PIL.Image import getmodebase, new, isImageType
 import typing as tp
 
 
@@ -44,29 +42,4 @@ def point_in_box(
         box[1] <= point[1],
         point[1] <= box[1] + box[3]
     ])
-
-
-def merge_alphas(
-        a: Image,
-        b: Image,
-        opr: tp.Callable[[float, float], float]
-) -> Image:
-    """
-    merge the alpha channels of two images
-
-    :param a: first alpha
-    :param b: second alpha
-    :param opr: operation to merge the channels
-    """
-    im_a = a.load()
-    im_b = b.load()
-    width, height = a.size
-
-    alpha = Image.new('L', (width, height))
-    im = alpha.load()
-    for x in range(width):
-        for y in range(height):
-            im[x, y] = opr(im_a[x, y], im_b[x, y])
-
-    return alpha
 
