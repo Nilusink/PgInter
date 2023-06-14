@@ -508,9 +508,11 @@ class Frame(GeometryManager):
                 print("size: ", width, height)
 
             if width <= 0 < height:
+                print("w0")
                 width = int((image_width / image_height) * height)
 
             if height <= 0 < width:
+                print("h0")
                 height = int((image_height / image_width) * width)
 
             # if no with or height has yet been set, clone the
@@ -520,12 +522,6 @@ class Frame(GeometryManager):
 
             if height <= 0:
                 height = image_height
-
-            if width >= self._width:
-                self.width = width
-
-            if height >= self._height:
-                self.height = height
 
             # center image
             pos = (
