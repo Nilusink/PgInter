@@ -403,6 +403,10 @@ class Frame(GeometryManager):
                 if info in ("padding", "margin"):
                     self.layout_params[info] = self.style[info]
 
+            case GeoNotes.RequireRecalc:
+                print("rr")
+                self.root.notify(GeoNotes.RequireRecalc)
+
             case _:
                 super().notify(event, info)
 
@@ -795,12 +799,16 @@ class Frame(GeometryManager):
         """
         self._execute_event(FrameBind.hover)
 
+        self.root.notify(GeoNotes.RequireRecalc)
+
     def _on_active(self) -> None:
         """
         called on active
         """
         self.root.set_focus(self)
         self._execute_event(FrameBind.active)
+
+        self.root.notify(GeoNotes.RequireRecalc)
 
     def _on_no_active_hover(
             self,
@@ -815,6 +823,8 @@ class Frame(GeometryManager):
 
         if from_hover:
             self._execute_event(FrameBind.hover_release)
+
+            self.root.notify(GeoNotes.RequireRecalc)
 
     def delete(self) -> None:
         """
