@@ -714,11 +714,21 @@ class GeometryManager(SupportsChildren):
 
                     # assign stickiness
                     if not child._width_configured:
-                        if "w" in sticky:
-                            size[0] += (x_diff / 2) - params.margin
+                        if "w" in sticky and "e" in sticky:
+                            # sticky on both sides, expand to fit the box
+                            size[0] += x_diff - 2 * params.margin
 
-                        if "e" in sticky:
-                            size[0] += (x_diff / 2) - params.margin
+                        elif "w" in sticky:
+                            # sticky only west, anchor left
+                            x_position_offset = 0
+
+                        elif "e" in sticky:
+                            # sticky only east, anchor right
+                            x_position_offset = x_diff - params.margin
+
+                        else:
+                            # no sticky set, center on x
+                            x_position_offset += x_diff / 2 - params.margin
 
                         child.assigned_width = size[0]
 
@@ -728,11 +738,21 @@ class GeometryManager(SupportsChildren):
                         x_position_offset += x_diff / 2 - params.margin
 
                     if not child._height_configured:
-                        if "n" in sticky:
-                            size[1] += (y_diff / 2) - params.margin
+                        if "n" in sticky and "s" in sticky:
+                            # sticky on both sides, expand to fit the box
+                            size[1] += y_diff - 2 * params.margin
 
-                        if "s" in sticky:
-                            size[1] += (y_diff / 2) - params.margin
+                        elif "n" in sticky:
+                            # sticky only north, anchor the widget upwards
+                            y_position_offset = 0
+
+                        elif "s" in sticky:
+                            # sticky only south, anchor the widget downwards
+                            y_position_offset = y_diff - params.margin
+
+                        else:
+                            # no sticky set, center on y
+                            y_position_offset += y_diff / 2 - params.margin
 
                         child.assigned_height = size[1]
 

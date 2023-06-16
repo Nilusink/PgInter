@@ -116,8 +116,6 @@ class Label(Frame):
         )
 
         self.configure(min_width=frame_size[0], min_height=frame_size[1])
-        self.assigned_width = frame_size[0]
-        self.assigned_height = frame_size[1]
 
         # draw frame
         super().draw(surface)
@@ -148,6 +146,8 @@ class Label(Frame):
 
         if textvariable is not ...:
             self._text_var = textvariable
+
+        super().configure(**kwargs)
 
     def notify(
             self, event: ThemeManager.NotifyEvent | Style.NotifyEvent,

@@ -835,6 +835,3 @@ class Frame(GeometryManager):
         # terminate all children
         for child in self._children:
             child.delete()
-
-# TODO: resizing issue
-# TODO: image border radius

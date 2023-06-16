@@ -263,16 +263,16 @@ class PgRoot(GeometryManager):
         """
         update the screen
         """
+        self.__background.fill(self._bg)
+
         if self._requires_recalc:
             self._requires_recalc = False
-
-            self.__background.fill(self._bg)
-
             self.calculate_geometry()
-            for child, params in self._child_params:
-                child.draw(self.__background)
 
-            pg.display.flip()
+        for child, params in self._child_params:
+            child.draw(self.__background)
+
+        pg.display.flip()
 
     def mainloop(self):
         """
