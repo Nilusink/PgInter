@@ -11,7 +11,6 @@ from concurrent.futures import ThreadPoolExecutor as Pool, Future
 from .widgets import GeometryManager
 from .theme import ThemeManager
 from time import perf_counter
-from copy import deepcopy
 from .types import *
 import typing as tp
 import pygame as pg
@@ -50,6 +49,8 @@ class PgRoot(GeometryManager):
     _tpool: Pool
 
     show_wireframe: bool = False
+    smooth_scaling: bool = False
+    _last_resize: float = 0
 
     def __init__(
             self,
@@ -215,7 +216,16 @@ class PgRoot(GeometryManager):
                         )
 
                 case pg.VIDEORESIZE:  # window size changed
-                    self._requires_recalc = True
+                    if self.smooth_scaling:
+                        self._requires_recalc = True
+
+                    else:
+                        now = perf_counter()
+                        delta = now - self._last_resize
+                        self._last_resize = now
+
+                        if delta > .2:
+                            self._requires_recalc = True
                 #     width, height = event.size
                 #
                 #     print("updating size: ", (width, height), "\t", self._min_size)

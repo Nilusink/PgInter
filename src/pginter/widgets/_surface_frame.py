@@ -17,6 +17,7 @@ class SurfaceFrame(Frame):
     A pygame surface to draw on
     """
     _surface: pg.Surface
+    _in_loop_func: tp.Callable[[pg.Surface], None] = ...
 
     def __init__(
             self,
@@ -38,6 +39,13 @@ class SurfaceFrame(Frame):
             min_height=min_height
         )
 
+    def in_loop(self, func: tp.Callable[[pg.Surface], None]) -> None:
+        """
+        Execute a task in the loop. The function argument is the pygame surface.
+        """
+        if isinstance(func, tp.Callable):
+            self._in_loop_func = func
+
     @property
     def surface(self) -> pg.Surface:
         return self._surface
@@ -46,4 +54,7 @@ class SurfaceFrame(Frame):
         """
         insert the surface
         """
+        if self._in_loop_func is not ...:
+            self._in_loop_func(self._surface)
+
         surface.blit(self._surface, (self._x, self._y))

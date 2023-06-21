@@ -2,7 +2,7 @@
 _entry.py
 22. February 2023
 
-<description>
+A generic entry for entering text
 
 Author:
 Nilusink
@@ -20,6 +20,9 @@ import time
 
 
 class Entry(Frame):
+    """
+    a generic entry for entering text
+    """
     _label: Label = ...
     _string_var: StringVar = ...
     _placeholder_text: str = ...
@@ -405,10 +408,8 @@ class Entry(Frame):
 
                 print("index: ", new_index)
 
-                if self._notify_child_active_hover(info):
-                    self.set_no_hover_active()
-                else:
-                    self.set_active()
+                self.set_active()
+                self.root.set_focus(self)
 
             case _:
                 super().notify(event, info)
@@ -416,4 +417,5 @@ class Entry(Frame):
 
 # TODO: clickable cursor
 # TODO: enabled / disabled
+# TODO: randomly crashes
 # TODO: not shown if no height | width | sticky is given
