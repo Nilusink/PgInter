@@ -129,3 +129,6 @@ if PIL_EXISTS:
             pil_image.size,
             pil_image.mode
         ).convert_alpha()
+
+else:
+    raise RuntimeWarning("PIL is not installed!")
