@@ -7,6 +7,7 @@ General image tools
 Author:
 Nilusink
 """
+from warnings import warn
 import pygame as pg
 import typing as tp
 
@@ -131,4 +132,4 @@ if PIL_EXISTS:
         ).convert_alpha()
 
 else:
-    raise RuntimeWarning("PIL is not installed!")
+    warn("PIL is not installed, some functionality is limited!")
