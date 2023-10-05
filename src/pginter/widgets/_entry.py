@@ -399,14 +399,16 @@ class Entry(Frame):
                     )
 
             case GeoNotes.SetActive:
-                new_index = self._label.get_index_on_position(
-                    info[0] - self._x
-                )
+                # new_index = self._label.get_index_on_position(
+                #     info[0] - self._x
+                # )
+                #
+                # if 0 <= new_index <= len(self._string_var.get()):
+                #     self._cursor_pos = new_index
+                #
+                # print("index: ", new_index)
 
-                if 0 <= new_index <= len(self._string_var.get()):
-                    self._cursor_pos = new_index
-
-                print("index: ", new_index)
+                self._cursor_pos = len(self._string_var.get())-1
 
                 self.set_active()
                 self.root.set_focus(self)
@@ -417,5 +419,5 @@ class Entry(Frame):
 
 # TODO: clickable cursor
 # TODO: enabled / disabled
-# TODO: randomly crashes
+# TODO: make a get_index_on_position function that doesn't crash the program
 # TODO: not shown if no height | width | sticky is given
