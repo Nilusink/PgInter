@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="pginter",
-    version="0.0.5",
+    version="0.2.14",
     author="Nilusink",
     author_email="nilusink@protonmail.com",
     description="A python GUI interface, based on pygame",
@@ -16,15 +16,16 @@ setuptools.setup(
     #     "Official Website": "http://info.fridrich.xyz",
     # },
     classifiers=[
-        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
-    python_requires=">=3.10",
-    include_package_data=True
-    # data_files=[
-    #     ('pginter/theme/themes/', ['src/pginter/theme/themes/default.json'])
-    # ]
+    python_requires=">=3.11",
+    include_package_data=True,
+    install_requires=[
+        "setuptools>=60.2.0",
+        "pygame>=2.1.2"
+    ],
 )

@@ -7,8 +7,18 @@ types for the geometry manager
 Author:
 Nilusink
 """
+from enum import Enum
 
 
-Absolute = 0
-Pack = 1
-Grid = 2
+class Layout(Enum):
+    Absolute = "absolute"
+    Pack = "pack"
+    Grid = "grid"
+
+
+class GeoNotes(Enum):
+    SetNormal = 0
+    SetHover = 1
+    SetActive = 2
+    RequireRedraw = 3
+    RequireRecalc = 4

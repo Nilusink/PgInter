@@ -22,7 +22,7 @@ class Appearance(Enum):
     light = 1
 
 
-class NotifyEvent(Enum):
+class _NotifyEvent(Enum):
     theme_reload = 0
 
 
@@ -31,7 +31,7 @@ class ThemeManager:
     the build-in theme manager
     """
     Appearance = Appearance
-    NotifyEvent = NotifyEvent
+    NotifyEvent = _NotifyEvent
     _appearance: Appearance = Appearance.dark
     _notify_on: dict[NotifyEvent, list[tp.Callable]] = ...
     _config: dict[str, str | dict] = ...
@@ -51,7 +51,7 @@ class ThemeManager:
         # load the theme
         self._theme_path = theme_path
         self._notify_on = {
-            NotifyEvent.theme_reload: []
+            _NotifyEvent.theme_reload: []
         }
 
         self.reload_theme()
@@ -69,7 +69,12 @@ class ThemeManager:
         """
         reload the config theme
         """
-        self._config = json.load(open(DEFAULT_THEME if self.theme_path is ... else self.theme_path, "r"))
+        self._config = json.load(
+            open(
+                DEFAULT_THEME if self.theme_path is ... else self.theme_path,
+                "r"
+            )
+        )
 
         # convert each color to a color class instance
         def convert_color(color):
@@ -79,10 +84,14 @@ class ThemeManager:
                     return Color.from_hex(color, 255)
 
                 elif color.startswith("rgb"):
-                    return Color.from_rgb(*[int(val) for val in color.lstrip("rgb").split(",")])
+                    return Color.from_rgb(
+                        *[int(val) for val in color.lstrip("rgb").split(",")]
+                    )
 
                 else:
-                    raise ValueError(f"Invalid color value in theme file: \"{color}\"")
+                    raise ValueError(
+                        f"Invalid color value in theme file: \"{color}\""
+                    )
 
             # rgb values written as tuple
             elif isinstance(color, list):
@@ -99,8 +108,8 @@ class ThemeManager:
                 self._config[key][ckey] = convert_color(color)
 
         # notify
-        for element in self._notify_on[NotifyEvent.theme_reload]:
-            element(NotifyEvent.theme_reload)
+        for element in self._notify_on[_NotifyEvent.theme_reload]:
+            element(_NotifyEvent.theme_reload)
 
     def set_appearance(self, appearance: Appearance) -> None:
         """
@@ -112,7 +121,10 @@ class ThemeManager:
             self._appearance = appearance
 
         else:
-            raise ValueError(f"Expected \"Appearance\", got \"{appearance.__class__.__name__}\"")
+            raise ValueError(
+                f"Expected \"Appearance\", got "
+                f"\"{appearance.__class__.__name__}\""
+            )
 
         self.reload_theme()
 
