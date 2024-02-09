@@ -28,7 +28,13 @@ class SurfaceFrame(Frame):
             min_width: int = ...,
             min_height: int = ...,
     ) -> None:
-        self._surface = pg.Surface((width, height), pg.SRCALPHA)
+        self._surface = pg.Surface(
+            (
+                (1 if min_width is ... else min_width) if width is ... else width,
+                (1 if min_height is ... else min_height) if height is ... else height
+            ),
+            pg.SRCALPHA
+        )
 
         # limit the arguments that get passed to the parent
         super().__init__(

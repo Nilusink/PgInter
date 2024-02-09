@@ -21,13 +21,10 @@ DEFAULT_TITLE: str = "Window"
 DEFAULT_ICON: str = os.path.dirname(__file__) + "/icon.png"
 
 
-RES_T = tp.TypeVar("RES_T")
-
-
-class _TimeoutCandidate(tp.TypedDict):
+class _TimeoutCandidate[T](tp.TypedDict):
     timeout_left: float
-    function: tp.Callable[[tp.Any], RES_T]
-    future: Future[RES_T]
+    function: tp.Callable[[tp.Any], T]
+    future: Future[T]
     args: tuple[tp.Any, ...]
     kwargs: dict[str, tp.Any]
 
@@ -41,6 +38,7 @@ class PgRoot(GeometryManager):
     _min_size: tuple[int, int] = ...
     _bg_configured: bool = False
     _mouse_pos: tuple[int, int] = ...
+    _mouse_scroll: list[int, int]
     _max_framerate: int = ...
     _requires_recalc: bool = True
 
@@ -61,11 +59,12 @@ class PgRoot(GeometryManager):
             padding: int = 0,
             margin: int = 0,
             max_framerate: int = 30
-    ):
+    ) -> None:
         self._last_it_call = perf_counter()
         self._max_framerate = max_framerate
         self._tpool = Pool(max_workers=10)
         self.__timeouts = []
+        self._mouse_scroll = [0, 0]
 
         super().__init__()
         self._theme = ThemeManager()
@@ -119,6 +118,10 @@ class PgRoot(GeometryManager):
     @property
     def root(self) -> tp.Self:
         return self
+
+    @property
+    def mouse_scroll(self) -> None:
+        return tuple(self._mouse_scroll)
 
     @property
     def _height_configured(self) -> bool:
@@ -215,6 +218,10 @@ class PgRoot(GeometryManager):
                             event
                         )
 
+                case pg.MOUSEWHEEL:
+                    self._mouse_scroll[0] -= event.x
+                    self._mouse_scroll[1] -= event.y
+
                 case pg.VIDEORESIZE:  # window size changed
                     if self.smooth_scaling:
                         self._requires_recalc = True
@@ -302,13 +309,13 @@ class PgRoot(GeometryManager):
         return pg.display.get_window_size()
 
     # tool functions
-    def after(
+    def after[T](
             self,
             timeout: int,
-            function: tp.Callable[[tp.Any], RES_T],
+            function: tp.Callable[[tp.Any], T],
             *args,
             **kwargs
-    ) -> Future[RES_T]:
+    ) -> Future[T]:
         """
         calls the given function after timeout milliseconds
 
@@ -318,7 +325,7 @@ class PgRoot(GeometryManager):
         :param kwargs: the given functions keyword arguments
         :returns: a future with the function's result
         """
-        n_future = Future[RES_T]()
+        n_future = Future[T]()
 
         self.__timeouts.append({
             "timeout_left": timeout,
